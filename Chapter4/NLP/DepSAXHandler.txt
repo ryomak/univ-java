@@ -1,0 +1,85 @@
+1:
+2:import org.xml.sax.*;
+3:import org.xml.sax.helpers.*;
+4:import java.util.*;
+5:
+6:/**
+7: * Yahoo形態素解析Web APIが返す解析結果XMLをChunkのリストにするクラス
+8: */
+9:public class DepSAXHandler extends DefaultHandler {
+10:
+11:    Morpheme curMorpheme;
+12:    List<Chunk> chunks;
+13:    Sentence sentence;
+14:    Chunk curChunk;
+15:    StringBuffer sb;
+16:    boolean endOfChunks;
+17:
+18:    public DepSAXHandler() {
+19:        chunks = new ArrayList<Chunk>();
+20:        endOfChunks = false;
+21:    }
+22:
+23:    public List<Chunk> getChunks() {
+24:        return chunks;
+25:    }
+26:
+27:    public Sentence getDependencyTree() {
+28:        return sentence;
+29:    }
+30:    
+31:    public void endElement(String namespaceURI,
+32:            String localName,
+33:            String qName) {
+34:        if (qName.equals("Result")) {
+35:            endOfChunks = true;
+36:            sentence = new Sentence(chunks);
+37:        } else if (qName.equals("Chunk")) {
+38:            chunks.add(curChunk);
+39:        } else if (qName.equals("Id")) {
+40:            curChunk.setId(Integer.parseInt(sb.toString()));
+41:        } else if (qName.equals("Dependency")) {
+42:            curChunk.setDependency(Integer.parseInt(sb.toString()));
+43:        } else if (qName.equals("Morphem")) {
+44:            curChunk.addMorpheme(curMorpheme);
+45:        } else if (qName.equals("Surface")) {
+46:            curMorpheme.setSurface(sb.toString());
+47:        } else if (qName.equals("Reading")) {
+48:            curMorpheme.setReading(sb.toString());
+49:        } else if (qName.equals("POS")) {
+50:            curMorpheme.setPos(sb.toString());
+51:        } else if (qName.equals("Baseform")) {
+52:            curMorpheme.setBaseform(sb.toString());
+53:        } else if (qName.equals("Feature")) {
+54:            curMorpheme.setFeature(sb.toString());
+55:        }
+56:    }
+57:
+58:    public void characters(char[] ch, int start, int length) {
+59:        if(sb != null) {
+60:            sb.append(ch, start, length);
+61:        }
+62:    }
+63:
+64:    public void startElement(String namespaceURI,
+65:            String localName,
+66:            String qName,
+67:            Attributes atts) {
+68:        if (endOfChunks) {
+69:            return;
+70:        }
+71:        if (qName.equals("Chunk")) {
+72:            curChunk = new Chunk();
+73:        } else if (qName.equals("Morphem")) {
+74:            curMorpheme = new Morpheme();
+75:        } else if (qName.equals("Id") ||
+76:                qName.equals("Dependency") ||
+77:                qName.equals("Surface") ||
+78:                qName.equals("Reading") ||
+79:                qName.equals("POS") ||
+80:                qName.equals("Baseform") ||
+81:                qName.equals("Feature")) {
+82:            sb = new StringBuffer(); 
+83:        }
+84:    }
+85:}

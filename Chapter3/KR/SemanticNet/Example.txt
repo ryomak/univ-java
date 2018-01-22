@@ -1,0 +1,46 @@
+ 1:import java.util.*;
+ 2:
+ 3:/***
+ 4: * Semantic Net の使用例
+ 5: */
+ 6:public class Example {
+ 7: public static void main(String args[]){
+ 8:  SemanticNet sn = new SemanticNet();
+ 9:
+10:  // 野球はスポーツである．
+11:  sn.addLink(new Link("is-a","baseball","sports",sn));
+12:
+13:  // 太郎は名古屋工業大学の学生である．
+14:  sn.addLink(new Link("is-a","Ito","NIT-student",sn));
+15:
+16:  // 太郎の専門は人工知能である．
+17:  sn.addLink(new Link("speciality","Ito","AI",sn));
+18:	
+19:  // フェラーリは車である．
+20:  sn.addLink(new Link("is-a","Ferrari","car",sn));
+21:
+22:  // 車はエンジンを持つ．
+23:  sn.addLink(new Link("has-a","car","engine",sn));
+24:	
+25:  // 太郎の趣味は野球である．
+26:  sn.addLink(new Link("hobby","Ito","baseball",sn));
+27:	
+28:  // 太郎はフェラーリを所有する．
+29:  sn.addLink(new Link("own","Ito","Ferrari",sn));
+30:
+31:  // 名古屋工業大学の学生は，学生である．
+32:  sn.addLink(new Link("is-a","NIT-student","student",sn));
+33:
+34:  // 学生は勉強しない．
+35:  sn.addLink(new Link("donot","student","study",sn));
+36:
+37:  sn.printLinks();
+38:  sn.printNodes();
+39:
+40:  Vector query = new Vector();
+41:  query.addElement(new Link("own","?y","Ferrari"));
+42:  query.addElement(new Link("is-a","?y","student"));
+43:  query.addElement(new Link("hobby","?y","baseball"));
+44:  sn.query(query);
+45: }    
+46:}

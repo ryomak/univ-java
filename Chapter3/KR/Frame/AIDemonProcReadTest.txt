@@ -1,0 +1,29 @@
+  1:/*
+  2: AIDemonProcReadTest.java
+  3:  すべての種類のデモン手続きのスーパークラス
+  4:
+  5:  when-read procedure は，スロット値を Enumeration として
+  6:  返さなけらばならない
+  7:*/
+  8:
+  9:import java.util.*;
+ 10:
+ 11:class AIDemonProcReadTest extends AIDemonProc {
+ 12:
+ 13:public
+ 14:Object eval(
+ 15: AIFrameSystem inFrameSystem,
+ 16: AIFrame inFrame,
+ 17: String inSlotName,
+ 18: Enumeration inSlotValues,
+ 19: Object inOpts )
+ 20:{
+ 21: Object height = inFrame.readSlotValue( inFrameSystem, "height", false );
+ 22: if ( height instanceof Integer ) {
+ 23:  int h = ((Integer) height).intValue();
+ 24:  return AIFrame.makeEnum( new Integer( (int) (0.9 * (h - 100))) );
+ 25: }
+ 26: return null;
+ 27:}
+ 28:
+ 29:}

@@ -1,0 +1,23 @@
+  1:/*
+  2: AIDemonProcWriteTest.java
+  3:  すべての種類のデモン手続きのスーパークラス
+  4:*/
+  5:
+  6:import java.util.*;
+  7:
+  8:class AIDemonProcWriteTest extends AIDemonProc {
+  9:
+ 10:public
+ 11:Object eval(
+ 12: AIFrameSystem inFrameSystem,
+ 13: AIFrame inFrame,
+ 14: String inSlotName,
+ 15: Enumeration inSlotValues,
+ 16: Object inOpts )
+ 17:{
+ 18: Object obj = AIFrame.getFirst( inSlotValues );
+ 19: inFrame.setSlotValue( inSlotName, "hello " + obj );
+ 20: return null;
+ 21:}
+ 22:
+ 23:}

@@ -1,0 +1,14 @@
+  1:/*
+  2: AIWhenConstructedProc.java
+  3:
+  4:*/
+  5:
+  6:public
+  7:abstract class AIWhenConstructedProc {
+  8:
+  9:public boolean isWhenConstructedProc() { return true; }
+ 10: 
+ 11:abstract public
+ 12:void eval( AIFrameSystem inFrameSystem, AIFrame inFrame );
+ 13:
+ 14:}

@@ -1,0 +1,332 @@
+  1:/*
+  2: AIFrameSystem.java
+  3:  フレームシステム
+  4:*/
+  5:
+  6:import java.util.*;
+  7:
+  8:public
+  9:class AIFrameSystem {
+ 10:
+ 11:final static String sTopFrameName = "top_level_frame"; 
+ 12:
+ 13:// すべてのフレームを格納するための辞書．
+ 14:// フレーム名をインデックスとして利用．
+ 15:private Dictionary mFrames = new Hashtable();
+ 16:
+ 17:
+ 18:/**
+ 19: * AIFrameSystem
+ 20: *  コンストラクタ
+ 21: */
+ 22:public
+ 23:AIFrameSystem() {
+ 24: mFrames.put( sTopFrameName,
+ 25:  new AIClassFrame( this, null, sTopFrameName ) );
+ 26:}
+ 27:
+ 28:
+ 29:/**
+ 30: * createClassFrame
+ 31: *  クラスフレーム inName を作成する．
+ 32: */
+ 33:public
+ 34:void createClassFrame( String inName ) {
+ 35: createFrame( sTopFrameName, inName, false );
+ 36:}
+ 37:
+ 38:
+ 39:/**
+ 40: * createClassFrame
+ 41: *  スーパーフレームとして inSuperName を持つクラスフレーム
+ 42: *  inName を作成する．
+ 43: *
+ 44: *  @param inSuperName スーパーフレームのフレーム名
+ 45: *  @param inName フレーム名
+ 46: */
+ 47:public
+ 48:void createClassFrame( String inSuperName, String inName ) {
+ 49: createFrame( inSuperName, inName, false );
+ 50:}
+ 51:
+ 52:
+ 53:/**
+ 54: * createInstanceFrame
+ 55: *  スーパーフレームとして inSuperName を持つインスタンスフレーム
+ 56: *  inName を作成する．
+ 57: *
+ 58: *  @param inSuperName スーパーフレームのフレーム名
+ 59: *  @param inName フレーム名
+ 60: */
+ 61:public
+ 62:void createInstanceFrame( String inSuperName, String inName ) {
+ 63: createFrame( inSuperName, inName, true ); 
+ 64:}
+ 65:
+ 66:
+ 67:/*
+ 68: * createFrame 
+ 69: *  フレームを作成する
+ 70: *
+ 71: *  @param inSuperName スーパーフレームのフレーム名
+ 72: *  @param inName フレーム名
+ 73: *  @param inIsInstance インスタンスフレームなら true
+ 74: */
+ 75:void createFrame(
+ 76: String inSuperName,
+ 77: String inName,
+ 78: boolean inIsInstance )
+ 79:{
+ 80: AIClassFrame frame;
+ 81: try {
+ 82:  frame = (AIClassFrame) mFrames.get( inSuperName );
+ 83:  createFrame( frame, inName, inIsInstance );
+ 84: } catch ( Throwable err ) {
+ 85: }
+ 86:}
+ 87:
+ 88:
+ 89:/*
+ 90: * createFrame 
+ 91: *  フレームを作成する
+ 92: *
+ 93: *  @param inSuperName スーパーフレーム
+ 94: *  @param inName フレーム名
+ 95: *  @param inIsInstance インスタンスフレームなら true
+ 96: */
+ 97:
+ 98:void createFrame(
+ 99: AIClassFrame inSuperFrame,
+100: String inName,
+101: boolean inIsInstance )
+102:{
+103: AIFrame frame;
+104: if ( inIsInstance == true ) {
+105:  frame = new AIInstanceFrame( this, inSuperFrame, inName );
+106: } else {
+107:  frame = new AIClassFrame( this, inSuperFrame, inName );
+108: }
+109: mFrames.put( inName, frame );
+110:}
+111:
+112:
+113:/**
+114: * readSlotValue 
+115: *  スロット値を返す
+116: *
+117: *  @param inFrameName フレーム名
+118: *  @param inSlotName スロット名
+119: *  @param inDefault デフォルト値を優先したいなら true
+120: */
+121:public
+122:Object readSlotValue(
+123: String inFrameName,
+124: String inSlotName,
+125: boolean inDefault )
+126:{
+127: AIFrame frame = (AIFrame) mFrames.get( inFrameName );
+128: return frame.readSlotValue( this, inSlotName, inDefault );
+129:}
+130:
+131:
+132:/**
+133: * readSlotValue 
+134: *  スロット値を返す
+135: *
+136: *  @param inFrameName フレーム名
+137: *  @param inSlotName スロット名
+138: */
+139:public
+140:Object readSlotValue(
+141: String inFrameName,
+142: String inSlotName )
+143:{
+144: AIFrame frame = (AIFrame) mFrames.get( inFrameName );
+145: return frame.readSlotValue( this, inSlotName, false );
+146:}
+147:
+148:
+149:/**
+150: * readSlotValue 
+151: *  スロット値を返す
+152: *
+153: *  @param inFrameName フレーム名
+154: *  @param inSlotName スロット名
+155: *  @param inFacetName ファセット名
+156: */
+157:public
+158:Object readSlotValue(
+159: String inFrameName,
+160: String inSlotName,
+161: String inFacetName )
+162:{
+163: AIFrame frame = (AIFrame) mFrames.get( inFrameName );
+164: return frame.readSlotValue( this, inSlotName, false );
+165:}
+166:
+167:
+168:/**
+169: * writeSlotValue 
+170: *  スロット値を設定する．
+171: *
+172: *  @param inFrameName フレーム名
+173: *  @param inSlotName スロット名
+174: *  @param inSlotValue スロット値
+175: */
+176:public
+177:void writeSlotValue(
+178: String inFrameName,
+179: String inSlotName,
+180: Object inSlotValue )
+181:{
+182: AIFrame frame = (AIFrame) mFrames.get( inFrameName );
+183: frame.writeSlotValue( this, inSlotName, inSlotValue );
+184:}
+185:
+186:
+187:// demon procedure の設定
+188:
+189:/**
+190: * setWhenConstructedProc
+191: *  when-constructed procedure を設定する．
+192: */
+193:public
+194:void setWhenConstructedProc(
+195: String inFrameName,
+196: String inSlotName,
+197: AIWhenConstructedProc inDemonProc )
+198:{
+199: AIFrame frame = (AIFrame) mFrames.get( inFrameName );
+200: if ( frame != null )
+201:  frame.setWhenConstructedProc( inDemonProc );
+202:}
+203:
+204:public
+205:void setWhenConstructedProc(
+206: String inFrameName,
+207: String inSlotName,
+208: String inClassName )
+209:{
+210: try {
+211:  AIWhenConstructedProc demonProc =
+212:    (AIWhenConstructedProc) Class.forName( inClassName ).newInstance();
+213:  AIFrame frame = (AIFrame) mFrames.get( inFrameName );
+214:  if ( frame != null )
+215:   frame.setWhenConstructedProc( demonProc );
+216: } catch ( Exception err ) {
+217:  System.out.println( err );
+218: }
+219:}
+220:
+221:
+222:/**
+223: * setWhenRequestedProc
+224: *  when-requested procedure を設定する．
+225: */
+226:public
+227:void setWhenRequestedProc(
+228: String inFrameName,
+229: String inSlotName,
+230: AIDemonProc inDemonProc )
+231:{
+232: setDemonProc( AISlot.WHEN_REQUESTED, inFrameName,
+233:  inSlotName, inDemonProc );
+234:}
+235:
+236:public
+237:void setWhenRequestedProcClass(
+238: String inFrameName,
+239: String inSlotName,
+240: String inClassName )
+241:{
+242: setDemonProcClass( AISlot.WHEN_REQUESTED,
+243:  inFrameName, inSlotName, inClassName );
+244:}
+245:
+246:
+247:/**
+248: * setWhenReadProc
+249: *  when-read procedure を設定する．
+250: */
+251:public
+252:void setWhenReadProc(
+253: String inFrameName,
+254: String inSlotName,
+255: AIDemonProc inDemonProc )
+256:{
+257: setDemonProc( AISlot.WHEN_READ,
+258:  inFrameName, inSlotName, inDemonProc );
+259:}
+260:
+261:public
+262:void setWhenReadProcClass(
+263: String inFrameName,
+264: String inSlotName,
+265: String inClassName )
+266:{
+267: setDemonProcClass( AISlot.WHEN_READ,
+268:  inFrameName, inSlotName, inClassName );
+269:}
+270:
+271:
+272:/**
+273: * setWhenWrittenProc
+274: *  when-written procedure を設定する．
+275: */
+276:public
+277:void setWhenWrittenProc(
+278: String inFrameName,
+279: String inSlotName,
+280: AIDemonProc inDemonProc )
+281:{
+282: setDemonProc( AISlot.WHEN_WRITTEN,
+283:  inFrameName, inSlotName, inDemonProc );
+284:}
+285:
+286:public
+287:void setWhenWrittenProcClass(
+288: String inFrameName,
+289: String inSlotName,
+290: String inClassName )
+291:{
+292: setDemonProcClass( AISlot.WHEN_WRITTEN,
+293:  inFrameName, inSlotName, inClassName );
+294:}
+295:
+296:
+297:/*
+298: * setDemonProc
+299: *  demon procedure を設定する．
+300: */
+301:void setDemonProc(
+302: int inType,
+303: String inFrameName,
+304: String inSlotName,
+305: AIDemonProc inDemonProc )
+306:{
+307: AIFrame frame = (AIFrame) mFrames.get( inFrameName );
+308: if ( frame != null )
+309:  frame.setDemonProc( inType, inSlotName, inDemonProc );
+310:}
+311:
+312:
+313:/*
+314: * setDemonClass
+315: *  demon procedure を設定する．
+316: */
+317:void setDemonProcClass(
+318: int inType,
+319: String inFrameName,
+320: String inSlotName,
+321: String inClassName )
+322:{
+323: try {
+324:  AIDemonProc demon =
+325:   (AIDemonProc) Class.forName( inClassName ).newInstance();
+326:  setDemonProc( inType, inFrameName, inSlotName, demon );
+327: } catch ( Exception err ) {
+328:  System.out.println( err );
+329: }
+330:}
+331:
+332:} // end of class definition

@@ -1,0 +1,490 @@
+  1:import java.util.*;
+  2:import java.io.*;
+  3:
+  4:public class RuleBaseSystem {
+  5: static RuleBase rb;
+  6: static FileManager fm;
+  7: public static void main(String args[]){
+  8:  if(args.length != 1){
+  9:   System.out.println("Usage: %java RuleBaseSystem [query strings]");
+ 10:   System.out.println("Example:");
+ 11:   System.out.println(" \"?x is b\" and \"?x is c\" are queries");
+ 12:   System.out.println("  %java RuleBaseSystem \"?x is b,?x is c\"");
+ 13:  } else {
+ 14:   fm = new FileManager();
+ 15:   Vector rules = fm.loadRules("AnimalWorld.data");
+ 16:   Vector wm    = fm.loadWm("AnimalWorldWm.data");
+ 17:   rb = new RuleBase(rules,wm);
+ 18:   StringTokenizer st = new StringTokenizer(args[0],",");
+ 19:   Vector queries = new Vector();
+ 20:   for(int i = 0 ; i < st.countTokens();){
+ 21:    queries.addElement(st.nextToken());
+ 22:   }
+ 23:   rb.backwardChain(queries);
+ 24:  }
+ 25: }
+ 26:}
+ 27:    
+ 28:class RuleBase implements Serializable{
+ 29: String fileName;
+ 30: Vector wm;
+ 31: Vector rules;
+ 32:   
+ 33: RuleBase(Vector theRules,Vector theWm){
+ 34:  wm = theWm;
+ 35:  rules = theRules;
+ 36: }
+ 37:
+ 38: public void setWm(Vector theWm){
+ 39:  wm = theWm;
+ 40: }
+ 41:
+ 42: public void setRules(Vector theRules){
+ 43:  rules = theRules;
+ 44: }
+ 45:
+ 46: public void backwardChain(Vector hypothesis){
+ 47:  System.out.println("Hypothesis:"+hypothesis);
+ 48:  Vector orgQueries = (Vector)hypothesis.clone();
+ 49:  Hashtable binding = new Hashtable();
+ 50:  if(matchingPatterns(hypothesis,binding)){
+ 51:   System.out.println("Yes");
+ 52:   System.out.println(binding);
+ 53:   // 最終的な結果を基のクェリーに代入して表示する
+ 54:   for(int i = 0 ; i < orgQueries.size() ; i++){
+ 55:    String aQuery = (String)orgQueries.elementAt(i);
+ 56:    String anAnswer = instantiate(aQuery,binding);
+ 57:    System.out.println("Query: "+aQuery);
+ 58:    System.out.println("Answer:"+anAnswer);
+ 59:   }
+ 60:  } else {
+ 61:   System.out.println("No");
+ 62:  }
+ 63: }
+ 64:
+ 65: /**
+ 66:  * マッチするワーキングメモリのアサーションとルールの後件
+ 67:  * に対するバインディング情報を返す
+ 68:  */
+ 69: private boolean matchingPatterns(Vector thePatterns,Hashtable theBinding){
+ 70:  String firstPattern;
+ 71:  if(thePatterns.size() == 1){
+ 72:   firstPattern = (String)thePatterns.elementAt(0);
+ 73:   if(matchingPatternOne(firstPattern,theBinding,0) != -1){
+ 74:    return true;
+ 75:   } else {
+ 76:    return false;
+ 77:   }
+ 78:  } else {
+ 79:   firstPattern = (String)thePatterns.elementAt(0);
+ 80:   thePatterns.removeElementAt(0);
+ 81:
+ 82:   int cPoint = 0;
+ 83:   while(cPoint < wm.size() + rules.size()){
+ 84:    // 元のバインディングを取っておく
+ 85:    Hashtable orgBinding = new Hashtable();
+ 86:    for(Enumeration e = theBinding.keys() ; 
+ 87:        e.hasMoreElements();){
+ 88:     String key = (String)e.nextElement();
+ 89:     String value = (String)theBinding.get(key);
+ 90:     orgBinding.put(key,value);
+ 91:    }
+ 92:    int tmpPoint = 
+ 93:     matchingPatternOne(firstPattern,theBinding,cPoint);
+ 94:    if(tmpPoint != -1){
+ 95:     System.out.println("Success:"+firstPattern);
+ 96:     if(matchingPatterns(thePatterns,theBinding)){
+ 97:      //成功
+ 98:      return true;
+ 99:     } else {
+100:      //失敗
+101:      //choiceポイトを進める
+102:      cPoint = tmpPoint;
+103:      // 失敗したのでバインディングを戻す
+104:      theBinding.clear();
+105:      for(Enumeration e=orgBinding.keys();e.hasMoreElements();){
+106:       String key = (String)e.nextElement();
+107:       String value = (String)orgBinding.get(key);
+108:       theBinding.put(key,value);
+109:      }
+110:     }
+111:    } else {
+112:     // 失敗したのでバインディングを戻す
+113:     theBinding.clear();
+114:     for(Enumeration e=orgBinding.keys();e.hasMoreElements();){
+115:      String key = (String)e.nextElement();
+116:      String value = (String)orgBinding.get(key);
+117:      theBinding.put(key,value);
+118:     }
+119:     return false;
+120:    }
+121:   }
+122:   return false;
+123:  }
+124: }
+125:
+126: private int matchingPatternOne(String thePattern,
+                                    Hashtable theBinding,int cPoint){
+127:  if(cPoint < wm.size() ){
+128:   // WME(Working Memory Elements) と Unify してみる．
+129:   for(int i = cPoint ; i < wm.size() ; i++){
+130:    if((new Unifier()).unify(thePattern,
+131:                             (String)wm.elementAt(i),
+132:                             theBinding)){
+133:     System.out.println("Success WM");
+134:     System.out.println((String)wm.elementAt(i)+" <=> "+thePattern);
+135:     return i+1;
+136:    }
+137:   }
+138:  }
+139:  if(cPoint < wm.size() + rules.size()){
+140:   // Ruleと Unify してみる．
+141:   for(int i = cPoint ; i < rules.size() ; i++){
+142:    Rule aRule = rename((Rule)rules.elementAt(i));
+143:    // 元のバインディングを取っておく
+144:    Hashtable orgBinding = new Hashtable();
+145:    for(Enumeration e = theBinding.keys() ; e.hasMoreElements();){
+146:     String key = (String)e.nextElement();
+147:     String value = (String)theBinding.get(key);
+148:     orgBinding.put(key,value);
+149:    }
+150:    if((new Unifier()).unify(thePattern,
+151:                             (String)aRule.getConsequent(),
+152:                             theBinding)){
+153:     System.out.println("Success RULE");
+154:     System.out.println("Rule:"+aRule+" <=> "+thePattern);
+155:     // さらにbackwardChaining
+156:     Vector newPatterns = (Vector)aRule.getAntecedents();
+157:     if(matchingPatterns(newPatterns,theBinding)){
+158:      return wm.size()+i+1;
+159:     } else {
+160:      // 失敗したら元に戻す．
+161:      theBinding.clear();
+162:      for(Enumeration e=orgBinding.keys();e.hasMoreElements();){
+163:       String key = (String)e.nextElement();
+164:       String value = (String)orgBinding.get(key);
+165:       theBinding.put(key,value);
+166:      }
+167:     }
+168:    }
+169:   }
+170:  }
+171:  return -1;
+172: }
+173:
+174: /**
+175:  * 与えられたルールの変数をリネームしたルールのコピーを返す．
+176:  * @param   変数をリネームしたいルール
+177:  * @return  変数がリネームされたルールのコピーを返す．
+178:  */
+179: int uniqueNum = 0;
+180: private Rule rename(Rule theRule){
+181:  Rule newRule = theRule.getRenamedRule(uniqueNum);
+182:  uniqueNum = uniqueNum + 1;
+183:  return newRule;
+184: }
+185:    
+186: private String instantiate(String thePattern, Hashtable theBindings){
+187:  String result = new String();
+188:  StringTokenizer st = new StringTokenizer(thePattern);
+189:  for(int i = 0 ; i < st.countTokens();){
+190:   String tmp = st.nextToken();
+191:   if(var(tmp)){
+192:    result = result + " " + (String)theBindings.get(tmp);
+193:   } else {
+194:    result = result + " " + tmp;
+195:   }
+196:  }
+197:  return result.trim();
+198: }
+199:
+200: private boolean var(String str1){
+201:  // 先頭が ? なら変数
+202:  return str1.startsWith("?");
+203: }
+204:}
+205:
+206:class FileManager {
+207: FileReader f;
+208: StreamTokenizer st;
+209: public Vector loadRules(String theFileName){
+210:  Vector rules = new Vector();
+211:  String line;
+212:  try{
+213:   int token;
+214:   f = new FileReader(theFileName);
+215:   st = new StreamTokenizer(f);
+216:   while((token = st.nextToken())!= StreamTokenizer.TT_EOF){
+217:    switch(token){
+218:     case StreamTokenizer.TT_WORD:
+219:      String name = null;
+220:      Vector antecedents = null;
+221:      String consequent = null;
+222:      if("rule".equals(st.sval)){
+223:       st.nextToken();
+224:       name = st.sval;
+225:       st.nextToken();
+226:       if("if".equals(st.sval)){
+227:        antecedents = new Vector();
+228:        st.nextToken();
+229:        while(!"then".equals(st.sval)){
+230:         antecedents.addElement(st.sval);
+231:         st.nextToken();
+232:        }
+233:        if("then".equals(st.sval)){
+234:         st.nextToken();
+235:         consequent = st.sval;
+236:        }
+237:       }
+238:      }
+239:      rules.addElement(new Rule(name,antecedents,consequent));
+240:      break;
+241:     default:
+242:      System.out.println(token);
+243:      break;
+244:    }
+245:   }
+246:  } catch(Exception e){
+247:   System.out.println(e);
+248:  }
+249:  return rules;
+250: }
+251:
+252: public Vector loadWm(String theFileName){
+253:  Vector wm = new Vector();
+254:  String line;
+255:  try{
+256:   int token;
+257:   f = new FileReader(theFileName);
+258:   st = new StreamTokenizer(f);
+259:   st.eolIsSignificant(true);
+260:   st.wordChars('\'','\'');
+261:   while((token = st.nextToken())!= StreamTokenizer.TT_EOF){
+262:    line = new String();
+263:    while( token != StreamTokenizer.TT_EOL){
+264:     line = line + st.sval + " ";
+265:     token = st.nextToken();
+266:    }
+267:    wm.addElement(line.trim());
+268:   }
+269:  } catch(Exception e){
+270:   System.out.println(e);
+271:  }
+272:  return wm;
+273: }
+274:}
+275:
+276:
+277:/**
+278: * ルールを表すクラス
+279: */
+280:class Rule implements Serializable{
+281: String name;
+282: Vector antecedents;
+283: String consequent;
+284:
+285: Rule(String theName,Vector theAntecedents,String theConsequent){
+286:  this.name = theName;
+287:  this.antecedents = theAntecedents;
+288:  this.consequent = theConsequent;
+289: }
+290:
+291: public Rule getRenamedRule(int uniqueNum){
+292:  Vector vars = new Vector();
+293:  for(int i = 0 ; i < antecedents.size() ; i++){
+294:   String antecedent = (String)this.antecedents.elementAt(i);
+295:   vars = getVars(antecedent,vars);
+296:  }
+297:  vars = getVars(this.consequent,vars);
+298:  Hashtable renamedVarsTable = makeRenamedVarsTable(vars,uniqueNum);
+299:
+300:  Vector newAntecedents = new Vector();
+301:  for(int i = 0 ; i < antecedents.size() ; i++){
+302:   String newAntecedent =
+303:    renameVars((String)antecedents.elementAt(i),
+304:               renamedVarsTable);
+305:    newAntecedents.addElement(newAntecedent);
+306:  }
+307:  String newConsequent = renameVars(consequent,renamedVarsTable);
+308:  Rule newRule = new Rule(name,newAntecedents,newConsequent);
+309:  return newRule;
+310: }
+311:
+312: private Vector getVars(String thePattern,Vector vars){
+313:  StringTokenizer st = new StringTokenizer(thePattern);
+314:  for(int i = 0 ; i < st.countTokens();){
+315:   String tmp = st.nextToken();
+316:   if(var(tmp)){
+317:    vars.addElement(tmp);
+318:   }
+319:  }
+320:  return vars;
+321: }
+322:
+323: private Hashtable makeRenamedVarsTable(Vector vars,int uniqueNum){
+324:  Hashtable result = new Hashtable();
+325:  for(int i = 0 ; i < vars.size() ; i++){
+326:   String newVar = (String)vars.elementAt(i) + uniqueNum;
+327:   result.put((String)vars.elementAt(i),newVar);
+328:  }
+329:  return result;
+330: }
+331:    
+332: private String renameVars(String thePattern,
+333:                           Hashtable renamedVarsTable){
+334:  String result = new String();
+335:  StringTokenizer st = new StringTokenizer(thePattern);
+336:  for(int i = 0 ; i < st.countTokens();){
+337:   String tmp = st.nextToken();
+338:   if(var(tmp)){
+339:    result = result + " " +
+340:             (String)renamedVarsTable.get(tmp);
+341:   } else {
+342:    result = result + " " + tmp;
+343:   }
+344:  }
+345:  return result.trim();
+346: }
+347:
+348: private boolean var(String str){
+349:  // 先頭が ? なら変数
+350:  return str.startsWith("?");
+351: }
+352:
+353: public String getName(){
+354:  return name;
+355: }
+356:
+357: public String toString(){
+358:  return name+" "+antecedents.toString()+"->"+consequent;
+359: }
+360:
+361: public Vector getAntecedents(){
+362:  return antecedents;
+363: }
+364:
+365: public String getConsequent(){
+366:  return consequent;
+367: }
+368:}
+369:
+370:class Unifier {
+371: StringTokenizer st1;
+372: String buffer1[];    
+373: StringTokenizer st2;
+374: String buffer2[];
+375: Hashtable vars;
+376:    
+377: Unifier(){}
+378:
+379: public boolean unify(String string1,String string2,Hashtable theBindings){
+380:  Hashtable orgBindings = new Hashtable();
+381:  for(Enumeration e = theBindings.keys() ; e.hasMoreElements();){
+382:   String key = (String)e.nextElement();
+383:   String value = (String)theBindings.get(key);
+384:   orgBindings.put(key,value);
+385:  }
+386:  this.vars = theBindings;
+387:  if(unify(string1,string2)){
+388:   return true;
+389:  } else {
+390:   // 失敗したら元に戻す．
+391:   theBindings.clear();
+392:   for(Enumeration e = orgBindings.keys() ; e.hasMoreElements();){
+393:    String key = (String)e.nextElement();
+394:    String value = (String)orgBindings.get(key);
+395:    theBindings.put(key,value);
+396:   }
+397:   return false;
+398:  }
+399: }
+400:
+401: public boolean unify(String string1,String string2){
+402:  // 同じなら成功
+403:  if(string1.equals(string2)) return true;
+404:
+405:  // 各々トークに分ける
+406:  st1 = new StringTokenizer(string1);
+407:  st2 = new StringTokenizer(string2);
+408:
+409:  // 数が異なったら失敗
+410:  if(st1.countTokens() != st2.countTokens()) return false;
+411:
+412:  // 定数同士
+413:  int length = st1.countTokens();
+414:  buffer1 = new String[length];
+415:  buffer2 = new String[length];
+416:  for(int i = 0 ; i < length; i++){
+417:   buffer1[i] = st1.nextToken();
+418:   buffer2[i] = st2.nextToken();
+419:  }
+420:
+421:  // 初期値としてバインディングが与えられていたら
+422:  if(this.vars.size() != 0){
+423:   for(Enumeration keys = vars.keys(); keys.hasMoreElements();){
+424:    String key = (String)keys.nextElement();
+425:    String value = (String)vars.get(key);
+426:    replaceBuffer(key,value);
+427:   }
+428:  }
+429:
+430:  for(int i = 0 ; i < length ; i++){
+431:   if(!tokenMatching(buffer1[i],buffer2[i])){
+432:    return false;
+433:   }
+434:  }
+435:
+436:  return true;
+437: }
+438:
+439: boolean tokenMatching(String token1,String token2){
+440:  if(token1.equals(token2)) return true;
+441:  if( var(token1) && !var(token2)) return varMatching(token1,token2);
+442:  if(!var(token1) &&  var(token2)) return varMatching(token2,token1);
+443:  if( var(token1) &&  var(token2)) return varMatching(token1,token2);
+444:  return false;
+445: }
+446:
+447: boolean varMatching(String vartoken,String token){
+448:  if(vars.containsKey(vartoken)){
+449:   if(token.equals(vars.get(vartoken))){
+450:    return true;
+451:   } else {
+452:    return false;
+453:   }
+454:  } else {
+455:   replaceBuffer(vartoken,token);
+456:   if(vars.contains(vartoken)){
+457:    replaceBindings(vartoken,token);
+458:   }
+459:   vars.put(vartoken,token);
+460:  }
+461:  return true;
+462: }
+463:
+464: void replaceBuffer(String preString,String postString){
+465:  for(int i = 0 ; i < buffer1.length ; i++){
+466:   if(preString.equals(buffer1[i])){
+467:    buffer1[i] = postString;
+468:   }
+469:   if(preString.equals(buffer2[i])){
+470:    buffer2[i] = postString;
+471:   }
+472:  }
+473: }
+474:    
+475: void replaceBindings(String preString,String postString){
+476:  Enumeration keys;
+477:  for(keys = vars.keys(); keys.hasMoreElements();){
+478:   String key = (String)keys.nextElement();
+479:   if(preString.equals(vars.get(key))){
+480:    vars.put(key,postString);
+481:   }
+482:  }
+483: }
+484:    
+485: boolean var(String str1){
+486:  // 先頭が ? なら変数
+487:  return str1.startsWith("?");
+488: }
+489:}

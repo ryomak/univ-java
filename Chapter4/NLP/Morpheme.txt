@@ -1,0 +1,139 @@
+1:
+2:/**
+3: * 形態素クラス
+4: */
+5:public class Morpheme {
+6:
+7:    /**
+8:     * 表層的文字列
+9:     */
+10:    String surface;
+11:    
+12:    /**
+13:     * 読み
+14:     */
+15:    String reading;
+16:    
+17:    /**
+18:     * 品詞
+19:     */
+20:    String pos;
+21:    
+22:    /**
+23:     * 原型
+24:     */
+25:    String baseform;
+26:    
+27:    /**
+28:     * 特徴
+29:     */
+30:    String feature;
+31:
+32:    /**
+33:     * コンストラクタ
+34:     */
+35:    public Morpheme() {
+36:        super();
+37:    }
+38:
+39:    /**
+40:     * コンストラクタ
+41:     */
+42:    public Morpheme(String surface, String reading, String pos, String baseform) {
+43:        this.surface = surface;
+44:        this.reading = reading;
+45:        this.pos = pos;
+46:        this.baseform = baseform;
+47:        feature = "";
+48:    }
+49:    
+50:    /**
+51:     * コピーコンストラクタ
+52:     */
+53:    public Morpheme(Morpheme morph) {
+54:        this.surface = morph.surface;
+55:        this.reading = morph.reading;
+56:        this.pos = morph.pos;
+57:        this.baseform = morph.baseform;
+58:        this.feature = morph.feature;
+59:    }
+60:
+61:
+62:    
+63:    /**
+64:     * 動詞ならtrue, そうでなければfalseを返す
+65:     * @return 動詞か否か
+66:     */
+67:    public boolean isVerb() {
+68:        return pos.equals("動詞");
+69:    }
+70:
+71:
+72:    public void setSurface(String surface) {
+73:        this.surface = surface;
+74:    }
+75:
+76:    public void setReading(String reading) {
+77:        this.reading = reading;
+78:    }
+79:
+80:    public void setPos(String pos) {
+81:        this.pos = pos;
+82:    }
+83:
+84:    public void setBaseform(String baseform) {
+85:        this.baseform = baseform;
+86:    }
+87:
+88:    public void setFeature(String feature) {
+89:        this.feature = feature;
+90:    }
+91:
+92:    /**
+93:     * この形態素の表層的文字列を返す
+94:     * @return 表層的文字列
+95:     */
+96:    public String getSurface() {
+97:        return surface;
+98:    }
+99:
+100:    /**
+101:     * この形態素の読みを返す
+102:     * @return 読み
+103:     */
+104:    public String getReading() {
+105:        return reading;
+106:    }
+107:
+108:    /**
+109:     * この形態素の品詞を返す
+110:     * @return 品詞
+111:     */
+112:    public String getPos() {
+113:        return pos;
+114:    }
+115:
+116:    /**
+117:     * この形態素の原型を返す
+118:     * @return 原型
+119:     */
+120:    public String getBaseform() {
+121:        return baseform;
+122:    }
+123:
+124:    /**
+125:     * この形態素の特徴を合わせた文字列を返す
+126:     * @return 特徴を合わせた文字列
+127:     */
+128:    public String getFeature() {
+129:        return feature;
+130:    }
+131:
+132:    /**
+133:     * この形態素の情報を全て合わせてXML的に表現した文字列を返す
+134:     * @return 形態素情報を全て合わせてXML的に表現した文字列
+135:     */
+136:    public String toString() {
+137:        return "<Morpheme surface=\""+surface+"\" reading=\""+reading+"\" pos=\""+pos+"\" baseform=\""+baseform+"\" feature=\""+feature+"\" />";
+138:    }
+139:}

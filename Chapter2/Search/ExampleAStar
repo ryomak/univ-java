@@ -1,0 +1,30 @@
+% java Search 6
+
+
+A star Algorithm
+STEP:0
+OPEN:[L.A.Airport(h:0)(g:0)(f:0)]
+CLOSED:[]
+STEP:1
+OPEN:[Hoolywood(h:4)(g:3)(f:7), UCLA(h:7)(g:1)(f:8)]
+CLOSED:[L.A.Airport(h:0)(g:0)(f:0)]
+STEP:2
+OPEN:[UCLA(h:7)(g:1)(f:8), Pasadena(h:4)(g:6)(f:10), Downtown(h:3)(g:9)(f:12), Anaheim(h:6)(g:9)(f:15)]
+CLOSED:[L.A.Airport(h:0)(g:0)(f:0), Hoolywood(h:4)(g:3)(f:7)]
+STEP:3
+OPEN:[Hoolywood(h:4)(g:2)(f:6), Pasadena(h:4)(g:6)(f:10), Downtown(h:3)(g:7)(f:10), Anaheim(h:6)(g:9)(f:15)]
+CLOSED:[L.A.Airport(h:0)(g:0)(f:0), UCLA(h:7)(g:1)(f:8)]
+STEP:4
+OPEN:[Pasadena(h:4)(g:5)(f:9), Downtown(h:3)(g:7)(f:10), Anaheim(h:6)(g:8)(f:14)]
+CLOSED:[L.A.Airport(h:0)(g:0)(f:0), UCLA(h:7)(g:1)(f:8), Hoolywood(h:4)(g:2)(f:6)]
+STEP:5
+OPEN:[DisneyLand(h:2)(g:6)(f:8), Downtown(h:3)(g:7)(f:10), Las Vegas(h:0)(g:12)(f:12), Anaheim(h:6)(g:8)(f:14)]
+CLOSED:[L.A.Airport(h:0)(g:0)(f:0), UCLA(h:7)(g:1)(f:8), Hoolywood(h:4)(g:2)(f:6), Pasadena(h:4)(g:5)(f:9)]
+STEP:6
+OPEN:[Downtown(h:3)(g:7)(f:10), Las Vegas(h:0)(g:11)(f:11), Anaheim(h:6)(g:8)(f:14)]
+CLOSED:[L.A.Airport(h:0)(g:0)(f:0), UCLA(h:7)(g:1)(f:8), Hoolywood(h:4)(g:2)(f:6), Pasadena(h:4)(g:5)(f:9), DisneyLand(h:2)(g:6)(f:8)]
+STEP:7
+OPEN:[Las Vegas(h:0)(g:11)(f:11), Anaheim(h:6)(g:8)(f:14), SanDiego(h:2)(g:14)(f:16)]
+CLOSED:[L.A.Airport(h:0)(g:0)(f:0), UCLA(h:7)(g:1)(f:8), Hoolywood(h:4)(g:2)(f:6), Pasadena(h:4)(g:5)(f:9), DisneyLand(h:2)(g:6)(f:8), Downtown(h:3)(g:7)(f:10)]
+*** Solution ***
+Las Vegas(h:0)(g:11)(f:11) <- DisneyLand(h:2)(g:6)(f:8) <- Pasadena(h:4)(g:5)(f:9) <- Hoolywood(h:4)(g:2)(f:6) <- UCLA(h:7)(g:1)(f:8) <- L.A.Airport(h:0)(g:0)(f:0)

@@ -1,0 +1,9 @@
+% java Search 
+USAGE:
+java Search [Number]
+[Number] = 1 : Bredth First Search
+[Number] = 2 : Depth  First Search
+[Number] = 3 : Branch and Bound Search
+[Number] = 4 : Hill Climbing Search
+[Number] = 5 : Best First Search
+[Number] = 6 : A star Algorithm

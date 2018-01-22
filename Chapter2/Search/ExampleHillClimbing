@@ -1,0 +1,25 @@
+% java Search 4
+
+Hill Climbing Search
+[UCLA(h:7), Hoolywood(h:4)]
+[Anaheim(h:6), Downtown(h:3), Pasadena(h:4)]
+[SanDiego(h:2), Pasadena(h:4)]
+[UCLA(h:7)]
+[Hoolywood(h:4), Downtown(h:3)]
+[SanDiego(h:2), Pasadena(h:4)]
+[UCLA(h:7)]
+[Hoolywood(h:4), Downtown(h:3)]
+[SanDiego(h:2), Pasadena(h:4)]
+[UCLA(h:7)]
+[Hoolywood(h:4), Downtown(h:3)]
+[SanDiego(h:2), Pasadena(h:4)]
+[UCLA(h:7)]
+[Hoolywood(h:4), Downtown(h:3)]
+[SanDiego(h:2), Pasadena(h:4)]
+[UCLA(h:7)]
+[Hoolywood(h:4), Downtown(h:3)]
+[SanDiego(h:2), Pasadena(h:4)]
+[UCLA(h:7)]
+ :
+ :
+ :

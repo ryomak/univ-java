@@ -1,0 +1,144 @@
+  1:import java.awt.*;
+  2:import java.awt.event.*;
+  3:import java.util.*;
+  4: 
+  5:/**
+  6: * Javaによる簡単な計算機
+  7: *
+  8: */
+  9:public class Calculator {
+ 10: static CalculatorFrame cf;    
+ 11: public static void main(String args[]){
+ 12:  cf = new CalculatorFrame();
+ 13:  cf.show();
+ 14: }
+ 15:}
+ 16: 
+ 17:class CalculatorFrame extends Frame implements ActionListener {
+ 18: Label text;
+ 19: Button button[];
+ 20: Panel numberPanel;
+ 21: Button clear,plus,minus,equal;    
+ 22: Panel commandPanel;
+ 23: String buffer;
+ 24: int result;
+ 25: String operator;
+ 26: boolean append;
+ 27:     
+ 28: CalculatorFrame(){
+ 29:  setTitle("Calculator");
+ 30:         
+ 31:  initBuffer();
+ 32:  initOperator();
+ 33:  append = false;
+ 34:  text = new Label(buffer,Label.RIGHT);
+ 35:  text.setBackground(Color.white);
+ 36:  showBuffer();
+ 37:  result = Integer.parseInt(buffer);
+ 38: 
+ 39:  button = new Button[10];
+ 40:  for(int i = 0  ; i < 10 ; i++){
+ 41:   button[i] = new Button((new Integer(i)).toString());
+ 42:   button[i].addActionListener(this);
+ 43:  }
+ 44: 
+ 45:  clear = new Button("C");
+ 46:  clear.addActionListener(this);  
+ 47:  plus  = new Button("+");
+ 48:  plus.addActionListener(this);   
+ 49:  minus = new Button("-");
+ 50:  minus.addActionListener(this);  
+ 51:  equal = new Button("=");
+ 52:  equal.addActionListener(this);  
+ 53: 
+ 54:  numberPanel = new Panel();
+ 55:  numberPanel.setLayout(new GridLayout(4,3));
+ 56:  for(int i = 1 ; i < 10 ; i++){
+ 57:   numberPanel.add(button[i]);
+ 58:  }
+ 59:  numberPanel.add(button[0]);
+ 60: 
+ 61:  commandPanel = new Panel();
+ 62:  commandPanel.setLayout(new GridLayout(4,1));
+ 63:  commandPanel.add(clear);
+ 64:  commandPanel.add(plus);
+ 65:  commandPanel.add(minus);
+ 66:  commandPanel.add(equal);
+ 67:         
+ 68:  setLayout(new BorderLayout());
+ 69:  add("North",text);
+ 70:  add("Center",numberPanel);
+ 71:  add("East",commandPanel);
+ 72:  pack();
+ 73: }
+ 74: 
+ 75: public void actionPerformed(ActionEvent event){
+ 76:  Object source = event.getSource();
+ 77:  if(source == clear){
+ 78:   // クリアの場合
+ 79:   initBuffer();
+ 80:   initOperator();
+ 81:   showBuffer();
+ 82:  } else if (source == plus){
+ 83:   // プラスの場合
+ 84:   calculate();
+ 85:   setOperator("plus");
+ 86:   append = false;
+ 87:  } else if (source == minus){
+ 88:   // マイナスの場合
+ 89:   calculate();
+ 90:   setOperator("minus");
+ 91:   append = false;
+ 92:  } else if (source == equal){
+ 93:   // イコールの場合
+ 94:   calculate();
+ 95:   append = false;
+ 96:   initOperator();
+ 97:  } else {
+ 98:   // 0 ～ 9の数字の場合
+ 99:   if(append){
+100:    buffer = buffer + event.getActionCommand();
+101:   } else {
+102:    buffer = event.getActionCommand();
+103:   }
+104:   append = true;
+105:   showBuffer();
+106:  }
+107: }
+108: 
+109: void showBuffer(){
+110:  // 文字列として010などのように0が先頭についてしまう時，
+111:  // これを一度Integerに変換すると10と認識される．
+112:  // さらにこの10を文字列に変換しバッファにしまう．
+113:  buffer = Integer.toString(Integer.parseInt(buffer));
+114:   text.setText(buffer);
+115: }
+116: 
+117: void initBuffer(){
+118:  buffer = null;
+119:  buffer = new String("0");
+120: }
+121: 
+122: void initOperator(){
+123:  operator = null;
+124:  operator = new String("none");
+125: }
+126: 
+127: void setOperator(String theOperator){
+128:  operator = theOperator;
+129: }
+130: 
+131: void calculate(){
+132:  if(operator.equals("plus")){
+133:   result = result + Integer.parseInt(buffer);
+134:   buffer = Integer.toString(result);
+135:   showBuffer();
+136:  } else if(operator.equals("minus")){
+137:   result = result - Integer.parseInt(buffer);
+138:   buffer = Integer.toString(result);
+139:   showBuffer();
+140:  } else {
+141:   result = Integer.parseInt(buffer);
+142:  }
+143: }
+144:}

@@ -1,0 +1,68 @@
+ 1:import java.util.*;
+ 2:
+ 3:public class Link {
+ 4: String label;
+ 5: Node tail;
+ 6: Node head;
+ 7: boolean inheritance;
+ 8:
+ 9: Link(String theLabel,String theTail,
+10:      String theHead, SemanticNet sn){
+11:  label = theLabel;
+12:  Hashtable nodesNameTable = sn.getNodesNameTable();
+13:  Vector nodes = sn.getNodes();
+14:
+15:  tail = (Node)nodesNameTable.get(theTail);
+16:  if(tail == null){
+17:   tail = new Node(theTail);
+18:   nodes.addElement(tail);
+19:   nodesNameTable.put(theTail,tail);
+20:  }
+21:
+22:  head = (Node)nodesNameTable.get(theHead);
+23:  if(head == null){
+24:   head = new Node(theHead);
+25:   nodes.addElement(head);
+26:   nodesNameTable.put(theHead,head);
+27:  }
+28:  inheritance = false;
+29: }
+30:
+31: // For constructing query.
+32: Link(String theLabel,String theTail,String theHead){
+33:  label = theLabel;
+34:  tail = new Node(theTail);
+35:  head = new Node(theHead);
+36:  inheritance = false;
+37: }
+38:
+39: public void setInheritance(boolean value){
+40:  inheritance = value;
+41: }
+42:
+43: public Node getTail(){
+44:  return tail;
+45: }
+46:
+47: public Node getHead(){
+48:  return head;
+49: }
+50:
+51: public String getLabel(){
+52:  return label;
+53: }
+54:
+55: public String getFullName(){
+56:  return tail.getName() + " " + label + " " + head.getName();
+57: }
+58:    
+59: public String toString(){
+60:  String result =
+61:   tail.getName() + "  =" + label +"=>  " + head.getName();
+62:  if(!inheritance){
+63:   return result;
+64:  } else {
+65:   return "( "+result+" )";
+66:  }
+67: }
+68:}

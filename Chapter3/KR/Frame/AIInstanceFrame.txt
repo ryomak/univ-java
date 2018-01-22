@@ -1,0 +1,18 @@
+  1:/*
+  2: AIInstanceFrame.java
+  3:
+  4:*/
+  5:
+  6:public
+  7:class AIInstanceFrame extends AIFrame {
+  8:
+  9:public
+ 10:AIInstanceFrame(
+ 11: AIFrameSystem inFrameSystem,
+ 12: AIClassFrame inSuperFrame,
+ 13: String inName )
+ 14:{
+ 15: super( inFrameSystem, inSuperFrame, inName, true );
+ 16:}
+ 17: 
+ 18:}

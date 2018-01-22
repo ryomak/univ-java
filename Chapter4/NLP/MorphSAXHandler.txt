@@ -1,0 +1,70 @@
+1:
+2:import org.xml.sax.*;
+3:import org.xml.sax.helpers.*;
+4:import java.util.*;
+5:
+6:/**
+7: * Yahoo形態素解析Web APIが返す解析結果XMLをMorphemeのリストにするクラス
+8: */
+9:public class MorphSAXHandler extends DefaultHandler {
+10:
+11:    List<Morpheme> morphs;
+12:    Morpheme curMorph;
+13:    StringBuffer sb;
+14:    int totalCount;
+15:    boolean endOfMorphs;
+16:
+17:    public MorphSAXHandler() {
+18:        morphs = new ArrayList<Morpheme>();
+19:        endOfMorphs = false;
+20:    }
+21:
+22:    public List<Morpheme> getMorphemes() {
+23:        return morphs;
+24:    }
+25:
+26:    public void endElement(String namespaceURI,
+27:            String localName,
+28:            String qName) {
+29:        if (qName.equals("ma_result")) {
+30:            endOfMorphs = true;
+31:        } else if (qName.equals("word")) {
+32:            morphs.add(curMorph);
+33:        } else if (qName.equals("total_count")) {
+34:            totalCount = Integer.parseInt(sb.toString());
+35:        } else if (qName.equals("surface")) {
+36:            curMorph.setSurface(sb.toString());
+37:        } else if (qName.equals("reading")) {
+38:            curMorph.setReading(sb.toString());
+39:        } else if (qName.equals("pos")) {
+40:            curMorph.setPos(sb.toString());
+41:        } else if (qName.equals("baseform")) {
+42:            curMorph.setBaseform(sb.toString());
+43:        } else if (qName.equals("feature")) {
+44:            curMorph.setFeature(sb.toString());
+45:        }
+46:    }
+47:
+48:    public void characters(char[] ch, int start, int length) {
+49:        sb.append(ch, start, length);
+50:    }
+51:
+52:    public void startElement(String namespaceURI,
+53:            String localName,
+54:            String qName,
+55:            Attributes atts) {
+56:        if (endOfMorphs) {
+57:            return;
+58:        }
+59:        if (qName.equals("word")) {
+60:            curMorph = new Morpheme();
+61:        } else if (qName.equals("surface") ||
+62:                qName.equals("reading") ||
+63:                qName.equals("pos") ||
+64:                qName.equals("baseform") ||
+65:                qName.equals("feature") ||
+66:                qName.equals("total_count")) {
+67:            sb = new StringBuffer(); 
+68:        }
+69:    }
+70:}

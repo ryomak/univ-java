@@ -1,0 +1,64 @@
+  1:/*
+  2: AISlot.java
+  3:
+  4:  フレームにおけるスロットを実現するクラス．
+  5:*/
+  6:
+  7:import java.util.*;
+  8:
+  9:
+ 10:class AISlot {
+ 11:
+ 12:public final static int WHEN_REQUESTED = 0;
+ 13:public final static int WHEN_READ = WHEN_REQUESTED + 1;
+ 14:public final static int WHEN_WRITTEN = WHEN_READ + 1;
+ 15:public final static int WITH_RESPECT_TO = WHEN_WRITTEN + 1;
+ 16:public final static int DEMON_PROCS = WITH_RESPECT_TO + 1;
+ 17:
+ 18:private Vector mVals = new Vector();
+ 19:private AIDemonProc mDemons[];
+ 20:
+ 21:AISlot() {
+ 22: mDemons = new AIDemonProc[ DEMON_PROCS ];
+ 23:}
+ 24:
+ 25://
+ 26:Enumeration getSlotValues() {
+ 27: return mVals.elements();
+ 28:}
+ 29:
+ 30:Object getSlotValue() {
+ 31: Enumeration iter = getSlotValues();
+ 32: if ( iter != null && iter.hasMoreElements() == true )
+ 33:  return iter.nextElement();
+ 34: return null;
+ 35:}
+ 36:
+ 37:void setSlotValue( Object inSlotValue ) {
+ 38: mVals = new Vector();
+ 39: addSlotValue( inSlotValue );
+ 40:}
+ 41:
+ 42:void addSlotValue( Object inSlotValue ) {
+ 43: mVals.addElement( inSlotValue );
+ 44:}
+ 45:
+ 46:void removeSlotValue( Object inSlotValue ) {
+ 47: mVals.removeElement( inSlotValue );
+ 48:}
+ 49:
+ 50://
+ 51:AIDemonProc getWhenRequestedProc() { return mDemons[ WHEN_REQUESTED ]; }
+ 52:AIDemonProc getWhenReadProc() { return mDemons[ WHEN_READ ]; }
+ 53:AIDemonProc getWhenWrittenProc() { return mDemons[ WHEN_WRITTEN ]; }
+ 54:
+ 55:AIDemonProc getDemonProc( int inType ) { return mDemons[ inType ]; }
+ 56:
+ 57:void setDemonProc(
+ 58: int inType,
+ 59: AIDemonProc inDemonProc )
+ 60:{
+ 61: mDemons[ inType ] = inDemonProc;
+ 62:}
+ 63: 
+ 64:} // end of class definition

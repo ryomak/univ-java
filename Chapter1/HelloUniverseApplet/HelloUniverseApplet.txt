@@ -1,0 +1,10 @@
+ 1:import java.applet.Applet;
+ 2:import java.awt.Graphics;
+ 3:
+ 4:public class HelloUniverseApplet extends Applet {
+ 5:    public void init(){
+ 6:    }
+ 7:    public void paint(Graphics g){
+ 8:	   g.drawString("Hello Universe",30,30);
+ 9:    }
+10:}

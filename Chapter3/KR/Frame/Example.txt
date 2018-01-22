@@ -1,0 +1,40 @@
+  1:/*
+  2: Example.java
+  3:
+  4:*/
+  5:
+  6:public class Example {
+  7:
+  8: public static void main(String args[]) {
+  9:  System.out.println( "Frame" );
+ 10:
+ 11:  // フレームシステムの初期化
+ 12:  AIFrameSystem fs = new AIFrameSystem();
+ 13:  
+ 14:  // クラスフレーム human の生成
+ 15:  fs.createClassFrame( "human" );
+ 16:  // height スロットを設定
+ 17:  fs.writeSlotValue( "human", "height", new Integer( 160 ) );
+ 18:  // height から weight を計算するための式 weight = 0.9*(height-100) を
+ 19:  // when-requested demon として weight スロットに割り当てる  
+ 20:  fs.setWhenRequestedProc( "human", "weight", new AIDemonProcReadTest() );
+ 21:
+ 22:  // インスタンスフレーム tora のﾌ生成
+ 23:  fs.createInstanceFrame( "human", "tora" );
+ 24:
+ 25:  // height と weight はデフォルト値
+ 26:  System.out.println( fs.readSlotValue( "tora", "height", false ) );
+ 27:  System.out.println( fs.readSlotValue( "tora", "weight", false ) );
+ 28:
+ 29:  // weight はデフォルト値
+ 30:  fs.writeSlotValue( "tora", "height", new Integer( 165 ) );
+ 31:  System.out.println( fs.readSlotValue( "tora", "height", false ) );
+ 32:  System.out.println( fs.readSlotValue( "tora", "weight", false ) );
+ 33:
+ 34:  // 再びデフォルト値を表示
+ 35:  fs.writeSlotValue( "tora", "weight", new Integer( 50 ) );
+ 36:  System.out.println( fs.readSlotValue( "tora", "height", true ) );
+ 37:  System.out.println( fs.readSlotValue( "tora", "weight", true ) );
+ 38: }
+ 39: 
+ 40:}

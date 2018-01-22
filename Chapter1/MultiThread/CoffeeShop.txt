@@ -1,0 +1,87 @@
+ 1:import java.lang.*;
+ 2:import java.util.*;
+ 3: 
+ 4:public class CoffeeShop {
+ 5: public static void main(String arg[]){
+ 6:  Counter counter = new Counter();
+ 7:  ShopMaster master = new ShopMaster(counter);
+ 8:  CoffeeDrinker itota  = new CoffeeDrinker(counter,"itota");
+ 9:  CoffeeDrinker fukuta = new CoffeeDrinker(counter,"fukuta");
+10:  CoffeeDrinker hatto = new CoffeeDrinker(counter,"hatto");
+11:  master.start();
+12:  itota.start();
+13:  fukuta.start();
+14:  hatto.start();
+15: }
+16:}
+17: 
+18:class Counter {
+19: Vector coffees;
+20:
+21: Counter(){
+22:  coffees = new Vector();
+23: }
+24: 
+25: public synchronized void getCoffee(String name)
+26:        throws InterruptedException {
+27:  // だれか一人を起こす瞬間に，他のだれかがコーヒーを
+28:  // 持って行ってしまう可能性があるので while
+29:  while(coffees.size() == 0){
+30:   System.out.println(name +" can NOT drink a COFFEE!");
+31:   wait();
+32:  }
+33:  coffees.removeElementAt(0);
+34:  System.out.println(name +" can drink a COFFEE!");
+35:  System.out.println(coffees.toString());
+36:             
+37:  if(coffees.size() == 4) notifyAll();
+38: }
+39: 
+40: public synchronized void putCoffee()
+41:        throws InterruptedException {
+42: 
+43:  coffees.addElement(new String("Coffee"));
+44:  if(coffees.size() > 4){
+45:   System.out.println("It's AKAJI!");
+46:   wait();
+47:  }
+48:  System.out.println("Master made a COFFEE");
+49:  System.out.println(coffees.toString());
+50:        
+51:  if(coffees.size() == 1) notify();
+52: }
+53:}
+54: 
+55:class ShopMaster extends Thread {
+56: Counter counter;
+57: ShopMaster(Counter theCounter){
+58:  this.counter = theCounter;
+59: }
+60: public void run(){
+61:  while(true){
+62:   try{
+63:    counter.putCoffee();
+64:    // コーヒーをぼちぼち作る．
+65:    Thread.sleep((int)(3000 * Math.random()));
+66:   } catch(InterruptedException e){}
+67:  }
+68: }
+69:}
+70: 
+71:class CoffeeDrinker extends Thread {
+72: Counter counter;
+73: String name;
+74: CoffeeDrinker(Counter theCounter,String theName){
+75:  this.counter = theCounter;
+76:  this.name    = theName;
+77: }
+78: public void run(){
+79:  while(true){
+80:   try{
+81:    counter.getCoffee(this.name);
+82:    // コーヒーをぼちぼち飲む．
+83:    Thread.sleep((int)(10000 * Math.random()));
+84:   } catch(InterruptedException e){}
+85:  }
+86: }
+87:}

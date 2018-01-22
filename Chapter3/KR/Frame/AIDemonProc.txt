@@ -1,0 +1,30 @@
+  1:/*
+  2: AIDemonProc.java
+  3:  すべての種類のデモン手続きのスーパークラス
+  4:*/
+  5:
+  6:import java.util.*;
+  7:
+  8:abstract
+  9:class AIDemonProc {
+ 10:
+ 11:abstract
+ 12:public
+ 13:Object eval(
+ 14: AIFrameSystem inFrameSystem,
+ 15: AIFrame inFrame,
+ 16: String inSlotName,
+ 17: Enumeration inSlotValues,
+ 18: Object inOpts );
+ 19:
+ 20:public
+ 21:Object eval(
+ 22: AIFrameSystem inFrameSystem,
+ 23: AIFrame inFrame,
+ 24: String inSlotName,
+ 25: Enumeration inSlotValues )
+ 26:{
+ 27: return eval( inFrameSystem, inFrame, inSlotName, inSlotValues, null );
+ 28:}
+ 29:
+ 30:}

@@ -1,0 +1,87 @@
+1:
+2:import java.util.*;
+3:
+4:/**
+5: * •¶‘S‘Ì‚Ì•¶ß‚ÌƒŠƒXƒgD•¶ßŠÔ‚ÌŒW‚èó‚¯\‘¢‚ğ•Û‚·‚éƒNƒ‰ƒXD
+6: */
+7:public class Sentence extends ArrayList<Chunk> {
+8:
+9:    Chunk head;
+10:    
+11:    public Sentence(List<Chunk> chunks) {
+12:        super(chunks);
+13:        Iterator<Chunk> i = chunks.iterator();
+14:        while (i.hasNext()) {
+15:            Chunk chunk = i.next();  
+16:            int dependency = chunk.getDependency();
+17:            if (dependency == -1) {
+18:                head = chunk;
+19:            } else {
+20:                Chunk depChunk = chunks.get(dependency);
+21:                depChunk.addDependentChunk(chunk);
+22:                chunk.setDependencyChunk(depChunk);
+23:            }
+24:        }
+25:    }
+26:    
+27:    /**
+28:     * å«‚Ì•¶ß‚ğ•Ô‚·
+29:     * @return å«‚Ì•¶ß
+30:     */
+31:    public Chunk getHeadChunk() {
+32:        return head;
+33:    }
+34:    
+35:    /**
+36:     * “®ìåŠi‚Ì•¶ß‚ğ•Ô‚·
+37:     * @return “®ìåŠi‚Ì•¶ß
+38:     */
+39:    public Chunk getAgentCaseChunk() {
+40:        // å«‚ÉŒW‚é•¶ß‚Ì’†‚©‚çƒKŠi‚Ì•¶ß‚ğ’T‚·
+41:        Chunk cand = findChunkByHead(head.getDependents(), "•Œ", "‚ª");
+42:        if (cand != null) return cand;
+43:        // å«‚ÉŒW‚é•¶ß‚Ì’†‚©‚çƒnŠi‚Ì•¶ß‚ğ’T‚·
+44:        cand = findChunkByHead(head.getDependents(), "•Œ", "‚Í");
+45:        if (cand != null) return cand;
+46:        // ‘S‚Ä‚Ì•¶ß‚Ì’†‚©‚çƒKŠi‚Ì•¶ß‚ğ’T‚·
+47:        cand = findChunkByHead(this, "•Œ", "‚ª");
+48:        if (cand != null) return cand;
+49:        // ‘S‚Ä‚Ì•¶ß‚Ì’†‚©‚çƒnŠi‚Ì•¶ß‚ğ’T‚·
+50:        cand = findChunkByHead(this, "•Œ", "‚Í");
+51:        return cand;
+52:    }
+53:    
+54:    /**
+55:     * w’è‚µ‚½•iŒEŒ´Œ^‚ÌŒ`‘Ô‘f‚ğå«‚É‚Â•¶ß‚ğ•¶ßƒŠƒXƒg‚©‚ç’T‚µ‚Ä•Ô‚·
+56:     * @param chunks •¶ßƒŠƒXƒg
+57:     * @param pos ’T‚µ‚Ä‚Ä‚é•¶ß‚Ìå«Œ`‘Ô‘f‚Ì•iŒ
+58:     * @param baseform ’T‚µ‚Ä‚¢‚é•¶ß‚Ìå«Œ`‘Ô‘f‚ÌŒ´Œ^
+59:     * @return Œ©‚Â‚©‚Á‚½•¶ß
+60:     */
+61:    private Chunk findChunkByHead(List<Chunk> chunks, String pos, String baseform) {
+62:        for (Iterator<Chunk> i = chunks.iterator(); i.hasNext(); ) {
+63:            Chunk chunk = i.next();
+64:            Morpheme head = chunk.getHeadMorpheme();
+65:            if (pos.equals(head.getPos()) && baseform.equals(head.getBaseform())) {
+66:                return chunk;
+67:            }
+68:        }
+69:        return null;
+70:    }
+71:    
+72:    /**
+73:     * ‚±‚Ì•¶‚ÉŠÜ‚Ü‚ê‚é•¶ßŠÔ‚ÌŒW‚èó‚¯\‘¢‚ğ•\‚·XML•—‚Ì•¶š—ñ‚ğ•Ô‚·
+74:     * @return XML•—‚Ì•¶š—ñ
+75:     */
+76:    public String toString() {
+77:        StringBuffer sb = new StringBuffer();
+78:        sb.append("<Sentence head=\""+ head.getId() +"\">\n");
+79:        for (Iterator<Chunk> i = iterator(); i.hasNext(); ) {
+80:            sb.append(i.next().toString());
+81:            sb.append("\n");
+82:        }
+83:        sb.append("</Sentence>");
+84:        return sb.toString();
+85:    }
+86:    
+87:}

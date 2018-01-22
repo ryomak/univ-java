@@ -1,0 +1,23 @@
+% java Search 2
+
+Depth First Search
+STEP:0
+OPEN:[L.A.Airport(h:0)]
+CLOSED:[]
+STEP:1
+OPEN:[UCLA(h:7), Hoolywood(h:4)]
+CLOSED:[L.A.Airport(h:0)]
+STEP:2
+OPEN:[Downtown(h:3), Hoolywood(h:4)]
+CLOSED:[L.A.Airport(h:0), UCLA(h:7)]
+STEP:3
+OPEN:[SanDiego(h:2), Pasadena(h:4), Hoolywood(h:4)]
+CLOSED:[L.A.Airport(h:0), UCLA(h:7), Downtown(h:3)]
+STEP:4
+OPEN:[Pasadena(h:4), Hoolywood(h:4)]
+CLOSED:[L.A.Airport(h:0), UCLA(h:7), Downtown(h:3), SanDiego(h:2)]
+STEP:5
+OPEN:[Las Vegas(h:0), DisneyLand(h:2), Hoolywood(h:4)]
+CLOSED:[L.A.Airport(h:0), UCLA(h:7), Downtown(h:3), SanDiego(h:2), Pasadena(h:4)]
+*** Solution ***
+Las Vegas(h:0) <- Pasadena(h:4) <- Downtown(h:3) <- UCLA(h:7) <- L.A.Airport(h:0)

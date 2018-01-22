@@ -1,0 +1,608 @@
+  1:import java.util.*;
+  2:
+  3:public class Search {
+  4: Node node[];
+  5: Node goal;
+  6: Node start;
+  7:
+  8: Search() {
+  9:  makeStateSpace();
+ 10: }
+ 11:
+ 12: private void makeStateSpace() {
+ 13:  node = new Node[10];
+ 14:  // 状態空間の生成
+ 15:  node[0] = new Node("L.A.Airport", 0);
+ 16:  start = node[0];
+ 17:  node[1] = new Node("UCLA", 7);
+ 18:  node[2] = new Node("Hoolywood", 4);
+ 19:  node[3] = new Node("Anaheim", 6);
+ 20:  node[4] = new Node("GrandCanyon", 1);
+ 21:  node[5] = new Node("SanDiego", 2);
+ 22:  node[6] = new Node("Downtown", 3);
+ 23:  node[7] = new Node("Pasadena", 4);
+ 24:  node[8] = new Node("DisneyLand", 2);
+ 25:  node[9] = new Node("Las Vegas", 0);
+ 26:  goal = node[9];
+ 27:
+ 28:  node[0].addChild(node[1], 1);
+ 29:  node[0].addChild(node[2], 3);
+ 30:  node[1].addChild(node[2], 1);
+ 31:  node[1].addChild(node[6], 6);
+ 32:  node[2].addChild(node[3], 6);
+ 33:  node[2].addChild(node[6], 6);
+ 34:  node[2].addChild(node[7], 3);
+ 35:  node[3].addChild(node[4], 5);
+ 36:  node[3].addChild(node[7], 2);
+ 37:  node[3].addChild(node[8], 4);
+ 38:  node[4].addChild(node[8], 2);
+ 39:  node[4].addChild(node[9], 1);
+ 40:  node[5].addChild(node[1], 1);
+ 41:  node[6].addChild(node[5], 7);
+ 42:  node[6].addChild(node[7], 2);
+ 43:  node[7].addChild(node[8], 1);
+ 44:  node[7].addChild(node[9], 7);
+ 45:  node[8].addChild(node[9], 5);
+ 46: }
+ 47:
+ 48: /***
+ 49:  * 幅優先探索
+ 50:  */
+ 51: public void breadthFirst() {
+ 52:  Vector open = new Vector();
+ 53:  open.addElement(node[0]);
+ 54:  Vector closed = new Vector();
+ 55:  boolean success = false;
+ 56:  int step = 0;
+ 57:
+ 58:  for (;;) {
+ 59:   System.out.println("STEP:" + (step++));
+ 60:   System.out.println("OPEN:" + open.toString());
+ 61:   System.out.println("CLOSED:" + closed.toString());
+ 62:   // openは空か？
+ 63:   if (open.size() == 0) {
+ 64:    success = false;
+ 65:    break;
+ 66:   } else {
+ 67:    // openの先頭を取り出し node とする．
+ 68:    Node node = (Node) open.elementAt(0);
+ 69:    open.removeElementAt(0);
+ 70:    // node は ゴールか？
+ 71:    if (node == goal) {
+ 72:     success = true;
+ 73:     break;
+ 74:    } else {
+ 75:     // node を展開して子節点をすべて求める．
+ 76:     Vector children = node.getChildren();
+ 77:     // node を closed に入れる．
+ 78:     closed.addElement(node);
+ 79:     // 子節点 m が open にも closed にも含まれていなければ，
+ 80:     for (int i = 0; i < children.size(); i++) {
+ 81:      Node m = (Node) children.elementAt(i);
+ 82:      if (!open.contains(m) && !closed.contains(m)) {
+ 83:       // m から node へのポインタを付ける．
+ 84:       m.setPointer(node);
+ 85:       if (m == goal) {
+ 86:        open.insertElementAt(m, 0);
+ 87:       } else {
+ 88:        open.addElement(m);
+ 89:       }
+ 90:      }
+ 91:     }
+ 92:    }
+ 93:   }
+ 94:  }
+ 95:  if (success) {
+ 96:   System.out.println("*** Solution ***");
+ 97:   printSolution(goal);
+ 98:  }
+ 99: }
+100:
+101: /***
+102:  * 深さ優先探索
+103:  */
+104: public void depthFirst() {
+105:  Vector open = new Vector();
+106:  open.addElement(node[0]);
+107:  Vector closed = new Vector();
+108:  boolean success = false;
+109:  int step = 0;
+110:
+111:  for (;;) {
+112:   System.out.println("STEP:" + (step++));
+113:   System.out.println("OPEN:" + open.toString());
+114:   System.out.println("CLOSED:" + closed.toString());
+115:   // openは空か？
+116:   if (open.size() == 0) {
+117:    success = false;
+118:    break;
+119:   } else {
+120:    // openの先頭を取り出し node とする．
+121:    Node node = (Node) open.elementAt(0);
+122:    open.removeElementAt(0);
+123:    // node は ゴールか？
+124:    if (node == goal) {
+125:     success = true;
+126:     break;
+127:    } else {
+128:     // node を展開して子節点をすべて求める．
+129:     Vector children = node.getChildren();
+130:     // node を closed に入れる．
+131:     closed.addElement(node);
+132:     // 子節点 m が open にも closed にも含まれていなければ，
+133:     // 以下を実行．幅優先探索と異なるのはこの部分である．
+134:     // j は複数の子節点を適切にopenの先頭に置くために位置
+135:     // を調整する変数であり，一般には展開したときの子節点
+136:     // の位置は任意でかまわない．
+137:     int j = 0;
+138:     for (int i = 0; i < children.size(); i++) {
+139:      Node m = (Node) children.elementAt(i);
+140:      if (!open.contains(m) && !closed.contains(m)) {
+141:       // m から node へのポインタを付ける
+142:       m.setPointer(node);
+143:       if (m == goal) {
+144:        open.insertElementAt(m, 0);
+145:       } else {
+146:        open.insertElementAt(m, j);
+147:       }
+148:       j++;
+149:      }
+150:     }
+151:    }
+152:   }
+153:  }
+154:  if (success) {
+155:   System.out.println("*** Solution ***");
+156:   printSolution(goal);
+157:  }
+158: }
+159:
+160: /***
+161:  * 分岐限定法
+162:  */
+163: public void branchAndBound() {
+164:  Vector open = new Vector();
+165:  open.addElement(start);
+166:  start.setGValue(0);
+167:  Vector closed = new Vector();
+168:  boolean success = false;
+169:  int step = 0;
+170:
+171:  for (;;) {
+172:   System.out.println("STEP:" + (step++));
+173:   System.out.println("OPEN:" + open.toString());
+174:   System.out.println("CLOSED:" + closed.toString());
+175:   // openは空か？
+176:   if (open.size() == 0) {
+177:    success = false;
+178:    break;
+179:   } else {
+180:    // openの先頭を取り出し node とする．
+181:    Node node = (Node) open.elementAt(0);
+182:    open.removeElementAt(0);
+183:    // node は ゴールか？
+184:    if (node == goal) {
+185:     success = true;
+186:     break;
+187:    } else {
+188:     // node を展開して子節点をすべて求める．
+189:     Vector children = node.getChildren();
+190:     // node を closed に入れる．
+191:     closed.addElement(node);
+192:     for (int i = 0; i < children.size(); i++) {
+193:      Node m = (Node) children.elementAt(i);
+194:      // 子節点mがopenにもclosedにも含まれていなければ，
+195:      if (!open.contains(m) && !closed.contains(m)) {
+196:       // m から node へのポインタを付ける．
+197:       m.setPointer(node);
+198:       // nodeまでの評価値とnode->mのコストを
+199:       // 足したものをmの評価値とする
+200:       int gmn = node.getGValue() + node.getCost(m);
+201:       m.setGValue(gmn);
+202:       open.addElement(m);
+203:      }
+204:      // 子節点mがopenに含まれているならば，
+205:      if (open.contains(m)) {
+206:       int gmn = node.getGValue() + node.getCost(m);
+207:       if (gmn < m.getGValue()) {
+208:        m.setGValue(gmn);
+209:        m.setPointer(node);
+210:       }
+211:      }
+212:     }
+213:    }
+214:   }
+215:   open = sortUpperByGValue(open);
+216:  }
+217:  if (success) {
+218:   System.out.println("*** Solution ***");
+219:   printSolution(goal);
+220:  }
+221: }
+222:
+223: /***
+224:  * 山登り法
+225:  */
+226: public void hillClimbing() {
+227:  Vector open = new Vector();
+228:  open.addElement(start);
+229:  start.setGValue(0);
+230:  Vector closed = new Vector();
+231:  boolean success = false;
+232:
+233:  // Start を node とする．
+234:  Node node = start;
+235:  for (;;) {
+236:   // node は ゴールか？
+237:   if (node == goal) {
+238:    success = true;
+239:    break;
+240:   } else {
+241:    // node を展開して子節点をすべて求める．
+242:    Vector children = node.getChildren();
+243:    System.out.println(children.toString());
+244:    for (int i = 0; i < children.size(); i++) {
+245:     Node m = (Node) children.elementAt(i);
+246:     // m から node へのポインタを付ける．
+247:     m.setPointer(node);
+248:    }
+249:    // 子節点の中に goal があれば goal を node とする．
+250:    // なければ，最小の hValue を持つ子節点 m を node
+251:    // とする．
+252:    boolean goalp = false;
+253:    Node min = (Node) children.elementAt(0);
+254:    for (int i = 0; i < children.size(); i++) {
+255:     Node a = (Node) children.elementAt(i);
+256:     if (a == goal) {
+257:      goalp = true;
+258:     } else if (min.getHValue() > a.getHValue()) {
+259:      min = a;
+260:     }
+261:    }
+262:    if (goalp) {
+263:     node = goal;
+264:    } else {
+265:     node = min;
+266:    }
+267:   }
+268:  }
+269:  if (success) {
+270:   System.out.println("*** Solution ***");
+271:   printSolution(goal);
+272:  }
+273: }
+274:
+275: /***
+276:  * 最良優先探索
+277:  */
+278: public void bestFirst() {
+279:  Vector open = new Vector();
+280:  open.addElement(start);
+281:  start.setGValue(0);
+282:  Vector closed = new Vector();
+283:  boolean success = false;
+284:  int step = 0;
+285:
+286:  for (;;) {
+287:   System.out.println("STEP:" + (step++));
+288:   System.out.println("OPEN:" + open.toString());
+289:   System.out.println("CLOSED:" + closed.toString());
+290:   // openは空か？
+291:   if (open.size() == 0) {
+292:    success = false;
+293:    break;
+294:   } else {
+295:    // openの先頭を取り出し node とする．
+296:    Node node = (Node) open.elementAt(0);
+297:    open.removeElementAt(0);
+298:    // node は ゴールか？
+299:    if (node == goal) {
+300:     success = true;
+301:     break;
+302:    } else {
+303:     // node を展開して子節点をすべて求める．
+304:     Vector children = node.getChildren();
+305:     // node を closed に入れる．
+306:     closed.addElement(node);
+307:     for (int i = 0; i < children.size(); i++) {
+308:      Node m = (Node) children.elementAt(i);
+309:      // 子節点mがopenにもclosedにも含まれていなければ，
+310:      if (!open.contains(m) && !closed.contains(m)) {
+311:       // m から node へのポインタを付ける．
+312:       m.setPointer(node);
+313:       open.addElement(m);
+314:      }
+315:     }
+316:    }
+317:   }
+318:   open = sortUpperByHValue(open);
+319:  }
+320:  if (success) {
+321:   System.out.println("*** Solution ***");
+322:   printSolution(goal);
+323:  }
+324: }
+325:
+326: /***
+327:  * A* アルゴリズム
+328:  */
+329: public void aStar() {
+330:  Vector open = new Vector();
+331:  open.addElement(start);
+332:  start.setGValue(0);
+333:  start.setFValue(0);
+334:  Vector closed = new Vector();
+335:  boolean success = false;
+336:  int step = 0;
+337:
+338:  for (;;) {
+339:   System.out.println("STEP:" + (step++));
+340:   System.out.println("OPEN:" + open.toString());
+341:   System.out.println("CLOSED:" + closed.toString());
+342:   // openは空か？
+343:   if (open.size() == 0) {
+344:    success = false;
+345:    break;
+346:   } else {
+347:    // openの先頭を取り出し node とする．
+348:    Node node = (Node) open.elementAt(0);
+349:    open.removeElementAt(0);
+350:    // node は ゴールか？
+351:    if (node == goal) {
+352:     success = true;
+353:     break;
+354:    } else {
+355:     // node を展開して子節点をすべて求める．
+356:     Vector children = node.getChildren();
+357:     // node を closed に入れる．
+358:     closed.addElement(node);
+359:     for (int i = 0; i < children.size(); i++) {
+360:      Node m = (Node) children.elementAt(i);
+361:      int gmn = node.getGValue() + node.getCost(m);
+362:      int fmn = gmn + m.getHValue();
+363:
+364:      // 各子節点mの評価値とポインタを設定する
+365:      if (!open.contains(m) && !closed.contains(m)) {
+366:       // 子節点mがopenにもclosedにも含まれていない場合
+367:       // m から node へのポインタを付ける．
+368:       m.setGValue(gmn);
+369:       m.setFValue(fmn);
+370:       m.setPointer(node);
+371:       // mをopenに追加
+372:       open.addElement(m);
+373:      } else if (open.contains(m)) {
+374:       // 子節点mがopenに含まれている場合
+375:       if (gmn < m.getGValue()) {
+376:        // 評価値を更新し，m から node へのポインタを付け替える
+377:        m.setGValue(gmn);
+378:        m.setFValue(fmn);
+379:        m.setPointer(node);
+380:       }
+381:      } else if (closed.contains(m)) {
+382:       if (gmn < m.getGValue()) {
+383:        // 子節点mがclosedに含まれていて fmn < fm となる場合
+384:        // 評価値を更新し，mからnodeへのポインタを付け替える
+385:        m.setGValue(gmn);
+386:        m.setFValue(fmn);
+387:        m.setPointer(node);
+388:        // 子節点mをclosedからopenに移動
+389:        closed.removeElement(m);
+390:        open.addElement(m);
+391:       }
+392:      }
+393:     }
+394:    }
+395:   }
+396:   open = sortUpperByFValue(open);
+397:  }
+398:  if (success) {
+399:   System.out.println("*** Solution ***");
+400:   printSolution(goal);
+401:  }
+402: }
+403:
+404: 
+405: 
+406: /***
+407:  * 解の表示
+408:  */
+409: public void printSolution(Node theNode) {
+410:  if (theNode == start) {
+411:   System.out.println(theNode.toString());
+412:  } else {
+413:   System.out.print(theNode.toString() + " <- ");
+414:   printSolution(theNode.getPointer());
+415:  }
+416: }
+417:
+418: /***
+419:  * Vector を Node の fValue の昇順（小さい順）に列べ換える．
+420:  */
+421: public Vector sortUpperByFValue(Vector theOpen) {
+422:  Vector newOpen = new Vector();
+423:  Node min, tmp = null;
+424:  while (theOpen.size() > 0) {
+425:   min = (Node) theOpen.elementAt(0);
+426:   for (int i = 1; i < theOpen.size(); i++) {
+427:    tmp = (Node) theOpen.elementAt(i);
+428:    if (min.getFValue() > tmp.getFValue()) {
+429:     min = tmp;
+430:    }
+431:   }
+432:   newOpen.addElement(min);
+433:   theOpen.removeElement(min);
+434:  }
+435:  return newOpen;
+436: }
+437:
+438: 
+439: /***
+440:  * Vector を Node の gValue の昇順（小さい順）に列べ換える．
+441:  */
+442: public Vector sortUpperByGValue(Vector theOpen) {
+443:  Vector newOpen = new Vector();
+444:  Node min, tmp = null;
+445:  while (theOpen.size() > 0) {
+446:   min = (Node) theOpen.elementAt(0);
+447:   for (int i = 1; i < theOpen.size(); i++) {
+448:    tmp = (Node) theOpen.elementAt(i);
+449:    if (min.getGValue() > tmp.getGValue()) {
+450:     min = tmp;
+451:    }
+452:   }
+453:   newOpen.addElement(min);
+454:   theOpen.removeElement(min);
+455:  }
+456:  return newOpen;
+457: }
+458:
+459: /***
+460:  * Vector を Node の hValue の昇順（小さい順）に列べ換える．
+461:  */
+462: public Vector sortUpperByHValue(Vector theOpen) {
+463:  Vector newOpen = new Vector();
+464:  Node min, tmp = null;
+465:  while (theOpen.size() > 0) {
+466:   min = (Node) theOpen.elementAt(0);
+467:   for (int i = 1; i < theOpen.size(); i++) {
+468:    tmp = (Node) theOpen.elementAt(i);
+469:    if (min.getHValue() > tmp.getHValue()) {
+470:     min = tmp;
+471:    }
+472:   }
+473:   newOpen.addElement(min);
+474:   theOpen.removeElement(min);
+475:  }
+476:  return newOpen;
+477: }
+478:
+479: public static void main(String args[]) {
+480:  if (args.length != 1) {
+481:   System.out.println("USAGE:");
+482:   System.out.println("java Search [Number]");
+483:   System.out.println("[Number] = 1 : Bredth First Search");
+484:   System.out.println("[Number] = 2 : Depth  First Search");
+485:   System.out.println("[Number] = 3 : Branch and Bound Search");
+486:   System.out.println("[Number] = 4 : Hill Climbing Search");
+487:   System.out.println("[Number] = 5 : Best First Search");
+488:   System.out.println("[Number] = 6 : A star Algorithm");
+489:  } else {
+490:   int which = Integer.parseInt(args[0]);
+491:   switch (which) {
+492:   case 1:
+493:    // 幅優先探索
+494:    System.out.println("\nBreadth First Search");
+495:    (new Search()).breadthFirst();
+496:    break;
+497:   case 2:
+498:    // 深さ優先探索
+499:    System.out.println("\nDepth First Search");
+500:    (new Search()).depthFirst();
+501:    break;
+502:   case 3:
+503:    // 分岐限定法
+504:    System.out.println("\nBranch and Bound Search");
+505:    (new Search()).branchAndBound();
+506:    break;
+507:   case 4:
+508:    // 山登り法
+509:    System.out.println("\nHill Climbing Search");
+510:    (new Search()).hillClimbing();
+511:    break;
+512:   case 5:
+513:    // 最良優先探索
+514:    System.out.println("\nBest First Search");
+515:    (new Search()).bestFirst();
+516:    break;
+517:   case 6:
+518:    // A*アルゴリズム
+519:    System.out.println("\nA star Algorithm");
+520:    (new Search()).aStar();
+521:    break;
+522:   default:
+523:    System.out.println("Please input numbers 1 to 6");
+524:   }
+525:  }
+526: }
+527:}
+528:
+529:class Node {
+530: String name;
+531: Vector children;
+532: Hashtable childrenCosts;
+533: Node pointer; // 解表示のためのポインタ
+534: int gValue; // コスト
+535: int hValue; // ヒューリスティック値
+536: int fValue; // 評価値
+537: boolean hasGValue = false;
+538: boolean hasFValue = false;
+539:
+540: Node(String theName, int theHValue) {
+541:  name = theName;
+542:  children = new Vector();
+543:  childrenCosts = new Hashtable();
+544:  hValue = theHValue;
+545: }
+546:
+547: public String getName() {
+548:  return name;
+549: }
+550:
+551: public void setPointer(Node theNode) {
+552:  this.pointer = theNode;
+553: }
+554:
+555: public Node getPointer() {
+556:  return this.pointer;
+557: }
+558:
+559: public int getGValue() {
+560:  return gValue;
+561: }
+562:
+563: public void setGValue(int theGValue) {
+564:  hasGValue = true;
+565:  this.gValue = theGValue;
+566: }
+567:
+568: public int getHValue() {
+569:  return hValue;
+570: }
+571:
+572: public int getFValue() {
+573:  return fValue;
+574: }
+575:
+576: public void setFValue(int theFValue) {
+577:  hasFValue = true;
+578:  this.fValue = theFValue;
+579: }
+580:
+581: 
+582: /***
+583:  * theChild この節点の子節点 theCost その子節点までのコスト
+584:  */
+585: public void addChild(Node theChild, int theCost) {
+586:  children.addElement(theChild);
+587:  childrenCosts.put(theChild, new Integer(theCost));
+588: }
+589:
+590: public Vector getChildren() {
+591:  return children;
+592: }
+593:
+594: public int getCost(Node theChild) {
+595:  return ((Integer) childrenCosts.get(theChild)).intValue();
+596: }
+597:
+598: public String toString() {
+599:  String result = name + "(h:" + hValue + ")";
+600:  if (hasGValue) {
+601:   result = result + "(g:" + gValue + ")";
+602:  }
+603:  if (hasFValue) {
+604:   result = result + "(f:" + fValue + ")";
+605:  }
+606:  return result;
+607: }
+608:}

@@ -1,0 +1,97 @@
+1:import java.util.*;
+2:import java.util.regex.*;
+3:
+4:
+5:
+6:
+7:/**
+8: * チャットボットのクラス
+9: */
+10:public class Chatbot extends AbstractChatbot {
+11:    
+12:    // Yahoo Web API のアプリケーションID 
+13:    // (自分で取得したアプリケーションIDに変更する)
+14:    private static String YAHOO_APP_ID = "Y.6xN_K......";
+15:    
+16:    // チャットサーバのURL 
+17:    // (XMPPサーバが動いているホスト名に変更する)
+18:    public static String XMPP_SERVER = "localhost";
+19:    
+20:    // チャットボットのログイン名
+21:    // (好きな名前に変更する)
+22:    private static String BOT_NAME = "your_bot_name";
+23:    
+24:    // チャットボットのログインパスワード
+25:    // (設定したパスワードに変更する)
+26:    private static String BOT_PASS = "apple";
+27:    
+28:    // チャットボットと話すユーザのログイン名
+29:    // (好きな名前に変更する)
+30:    private static String USER_NAME = "your_name";
+31:
+32:    // プロキシサーバのURL　(必要なら設定する)
+33:    public static String PROXY_HOST = "";
+34:
+35:    // プロキシサーバのポート番号　(必要なら設定する)
+36:    public static String PROXY_PORT = "";
+37:    
+38:    // 
+39:    /**
+40:     * 最初に呼び出されるmainメソッド
+41:     */
+42:    public static void main(String[] args) throws Exception {
+43:        // Chatbotクラスのオブジェクトを作り，スレッドを開始
+44:        Chatbot chatbot = new Chatbot();
+45:        chatbot.start();
+46:        
+47:        // 沈黙を耐える秒数をセット
+48:        chatbot.setSilenceLimit(30);
+49:        
+50:        // チャットサーバへログイン
+51:        chatbot.login();
+52:        
+53:        //chatbot.createChatWith(USER_NAME + "@" + XMPP_SERVER); 
+54:        // 起動時にcreateMessageで生成したメッセージを送る
+55:        chatbot.sendMessage(USER_NAME + "@" + XMPP_SERVER);  
+56:    }
+57:    
+58:    /**
+59:     * senderから来たメッセージに対する返答文を生成し，返す
+60:     * @param sender メッセージの送信者 (アカウント名@チャットサーバ名)
+61:     * @param text メッセージ
+62:     * @return 返答する文
+63:     */
+64:    public String createResponse(String sender, String text) {
+65:        // 形態素解析
+66:        List<Morpheme> morphs = analyzeMorpheme(text);
+67:        System.out.println("形態素解析の結果: "+ morphs);
+68:        
+69:        // 係り受け解析
+70:        Sentence sentence = analyzeDependency(text);
+71:        System.out.println("係り受け解析の結果:\n"+ sentence);
+72: 
+73:        // 最も単純な実装例: オウム返し
+74:        String senderName = sender.substring(0, sender.indexOf("@"));
+75:        return senderName + "さんが「" + text + "」と言った";
+76:    }
+77:
+78:    /**
+79:     * target に向けて発信するメッセージの文を生成し，返す
+80:     * @param target 宛先　(アカウント名@チャットサーバ名)
+81:     * @return 送信する文
+82:     */ 
+83:    public String createMessage(String target) {
+84:        // 最も単純な実装例: 呼びかけるだけ
+85:        String targetName = target.substring(0, target.indexOf("@"));
+86:        return targetName + "さん、こんにちは";
+87:    } 
+88:
+89:    /**
+90:     * コンストラクタ
+91:     */
+92:    public Chatbot() {
+93:        super(YAHOO_APP_ID, BOT_NAME, BOT_PASS, XMPP_SERVER, PROXY_HOST, PROXY_PORT);
+94:    }
+95:
+96:
+97:}

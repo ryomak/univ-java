@@ -1,0 +1,231 @@
+  1:/**
+  2: * 簡単なリレーショナルデータベース
+  3: */
+  4:
+  5:import java.util.*;
+  6:import javax.swing.*;
+  7:import java.awt.BorderLayout;
+  8:import java.awt.Dimension;
+  9:
+ 10:public class RelationalDatabase {
+ 11: public static void main(String args[]) {
+ 12:  // "表1"
+ 13:  Relation relation1 = new Relation("表1", "名前", "国籍", "性別", "職業", "年齢");
+ 14:  relation1.insert("大介", "日本", "男", "学生", "23");
+ 15:  relation1.insert("クリス", "イギリス", "男", "学生", "26");
+ 16:  relation1.insert("ルーシー", "アメリカ", "女", "公務員", "34");
+ 17:  relation1.insert("ジョン", "アメリカ", "男", "会社員", "43");
+ 18:  relation1.insert("ヨハン", "ドイツ", "男", "学生", "23");
+ 19:  relation1.insert("陽子", "日本", "女", "主婦", "31");
+ 20:  relation1.show("表1", 20, 20);
+ 21:  // "表3"
+ 22:  Relation relation3 = new Relation("表3", "名前", "母国語");
+ 23:  relation3.insert("クリス", "英語");
+ 24:  relation3.insert("ジョン", "英語");
+ 25:  relation3.insert("ヨハン", "ドイツ語");
+ 26:  relation3.show("表3", 40, 40);
+ 27:  // "表2 SELECT 職業=学生 and 性別=男"
+ 28:  Set<Constraint> constraints = new HashSet<Constraint>();
+ 29:  constraints.add(new EqualityConstraint("職業", "学生"));
+ 30:  constraints.add(new EqualityConstraint("性別", "男"));
+ 31:  Relation relation2 = relation1.select(constraints);
+ 32:  relation2.name = "表2";
+ 33:  relation2.show("表2 SELECT 職業=学生 and 性別=男", 60, 60);
+ 34:  // "表4 JOIN 表２and 表３ with 名前＝名前"
+ 35:  Relation relation4 = relation2.join(relation3, "名前");
+ 36:  relation4.name = "表4";
+ 37:  relation4.show("表4 JOIN 表２and 表３ with 名前＝名前", 80, 80);
+ 38:  // "表5 PROJECT over 国籍 and 母国語"
+ 39:  Relation relation5 = relation4.project("表2.国籍", "表3.母国語");
+ 40:  relation5.name = "表5";
+ 41:  relation5.show("表5 PROJECT over 国籍 and 母国語", 100, 100);
+ 42: }
+ 43:}
+ 44:
+ 45:// リレーション（関係）
+ 46:class Relation {
+ 47: String name; // リレーション名
+ 48: String fields[]; // フィールド名一覧
+ 49: List<String[]> records; // レコード
+ 50: Map<String, Integer> index; // 何番目のフィールドかを管理
+ 51:
+ 52: // コンストラクタ
+ 53: public Relation(String name, String... fields) {
+ 54:  this.name = name;
+ 55:  this.fields = fields;
+ 56:  records = new ArrayList<String[]>();
+ 57:  index = new HashMap<String, Integer>();
+ 58:  int i = 0;
+ 59:  for (String fieled: fields)
+ 60:   index.put(fieled, i++);
+ 61: }
+ 62:
+ 63: // コンストラクタ(内部利用)
+ 64: Relation(Relation relation, List<String[]> records, boolean deepCopy) {
+ 65:  name = relation.name;
+ 66:  this.fields = relation.fields.clone();
+ 67:  this.index = new HashMap<String, Integer>(relation.index);
+ 68:  this.records = deepCopy ? deepCopy(records) : records; 
+ 69: }
+ 70: 
+ 71: // select演算: 指定した条件を満たすレコードを返す
+ 72: public Relation select(Set<Constraint> constraints) {
+ 73:  // 指定した条件を満たすレコードからリレーションを生成する
+ 74:  List<String[]> feasibleRecords = solve(records, constraints);
+ 75:  return new Relation(this, feasibleRecords, false);
+ 76: }
+ 77:
+ 78: // project演算: 指定したフィールドを取り出す
+ 79: public Relation project(String... fields) {
+ 80:  // 新しいリレーションを作成する
+ 81:  Relation relation = new Relation(name, fields);
+ 82:  for (String[] record: records) {
+ 83:   // 指定したフィールドだけのレコードを作成
+ 84:   String[] values = new String[fields.length];
+ 85:   int i = 0;
+ 86:   for (String field: fields)
+ 87:    values[i++] = record[index.get(field)];
+ 88:   relation.insert(values);
+ 89:  }
+ 90:  return relation;
+ 91: }
+ 92:
+ 93: // join演算: リレーションを結合する(inner join)
+ 94: public Relation join(Relation relation, String field) {
+ 95:  // フィールドの結合
+ 96:  int fieldSize = fields.length + relation.fields.length;
+ 97:  String[] joinedFields = new String[fieldSize];
+ 98:  int i = 0;
+ 99:  for (String field1: fields)
+100:   joinedFields[i++] = name + "." + field1;
+101:  for (String field1: relation.fields)
+102:   joinedFields[i++] = relation.name + "." + field1;
+103:
+104:  // レコードの結合
+105:  int index1 = index.get(field);
+106:  int index2 = relation.index.get(field);
+107:  List<String[]> joinedRecords = new ArrayList<String[]>();
+108:  for (String[] record1: records) {
+109:   String value1 = record1[index1];
+110:   for (String[] record2: relation.records) {
+111:    String value2 = record2[index2];
+112:    if (value1.equals(value2)) {
+113:     // レコードを結合する
+114:     String[] record = new String[fieldSize];
+115:     int j = 0;
+116:     for (String value: record1)
+117:      record[j++] = value;
+118:     for (String value: record2)
+119:      record[j++] = value;
+120:     joinedRecords.add(record);
+121:    }
+122:   }
+123:  }
+124:  // 新しいリレーションの生成
+125:  String joinedName = name + "+" + relation.name;
+126:  relation = new Relation(joinedName, joinedFields);
+127:  relation.records = joinedRecords;
+128:
+129:  return relation;
+130: }
+131:
+132: // レコードを追加する
+133: public void insert(String... values) {
+134:  // レコードをコピーする
+135:  String record[] = new String[values.length];
+136:  int i = 0;
+137:  for (String s: values)
+138:   record[i++] = s;
+139:  // リレーションに追加する
+140:  records.add(record);
+141: }
+142:
+143: // レコードを更新する
+144: public void update(String field, String value, Set<Constraint> constraints) {
+145:  // 条件を満たすレコードを得る
+146:  List<String[]> records1 = solve(records, constraints);
+147:  // 条件を満たすレコードを更新する
+148:  int i = index.get(field);
+149:  for (String[] record: records1)
+150:   record[i] = value;
+151: }
+152: 
+153: // レコードを削除する
+154: public void delete(Set<Constraint> constraints) {
+155:  // 条件を満たすレコードを得る
+156:  List<String[]> records1 = solve(records, constraints);
+157:  // 条件を満たすレコードを消す
+158:  Iterator<String[]> i = records.iterator();
+159:  while (i.hasNext()) {
+160:   String[] record = i.next();
+161:   if (records1.contains(record))
+162:    i.remove();
+163:  }
+164: }
+165:
+166: // レコードのリストをディープコピーする
+167: List<String[]> deepCopy(List<String[]> src) {
+168:  List<String[]> copy = new ArrayList<String[]>();
+169:  for (String[] record: src) {
+170:   record = record.clone();
+171:   copy.add(record);
+172:  }
+173:  return copy;
+174: }
+175: 
+176: // 条件を満たすレコードを選ぶ
+177: List<String[]> solve(List<String[]> allRecords, Set<Constraint> constraints) {
+178:  List<String[]> feasibleRecords = new ArrayList<String[]>(allRecords);
+179:  // 条件を満たさないレコードを削除する
+180:  for (Constraint constraint: constraints) {
+181:   Iterator<String[]> j = feasibleRecords.iterator();
+182:   while (j.hasNext()) {
+183:    if (!constraint.isSatisfied(this, j.next()))
+184:     j.remove();
+185:   }
+186:  }
+187:  return feasibleRecords;
+188: }
+189:
+190: // リレーションを表示する
+191: public void show(String title, int x, int y) {
+192:  int w = 100 * fields.length;
+193:  int h = 16 * records.size() + 20;
+194:  String[][] tableData = new String[records.size()][fields.length];
+195:  for (int i = 0; i < records.size(); i++)
+196:   for (int j = 0; j < fields.length; j++)
+197:    tableData[i][j] = records.get(i)[j];
+198:  JFrame frame = new JFrame();
+199:  frame.setTitle(title);
+200:  frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+201:  JTable table = new JTable(tableData, fields);
+202:  JScrollPane sp = new JScrollPane(table);
+203:  sp.setPreferredSize(new Dimension(w, h));
+204:  JPanel p = new JPanel();
+205:  p.add(sp);
+206:  frame.getContentPane().add(p, BorderLayout.CENTER);
+207:  frame.setVisible(true);
+208:  frame.setBounds(x, y, table.getWidth() + 32, h + 40);
+209: }
+210:}
+211:
+212:// selectなどで使う制約条件
+213:abstract class Constraint {
+214: abstract boolean isSatisfied(Relation relation, String[] record);
+215:}
+216:
+217:// 等しいかどうかをチェックする制約条件
+218:class EqualityConstraint extends Constraint { 
+219: String field;
+220: String value;
+221: 
+222: EqualityConstraint(String field, String value) {
+223:  this.field = field;
+224:  this.value = value;
+225: }
+226:
+227: boolean isSatisfied(Relation relation, String[] record) {
+228:  int index = relation.index.get(field);
+229:  return value.equals(record[index]);
+230: }
+231:}

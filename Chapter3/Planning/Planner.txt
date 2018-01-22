@@ -1,0 +1,585 @@
+  1:import java.util.*;
+  2:
+  3:public class Planner {
+  4: Vector operators;
+  5: Random rand;
+  6: Vector plan;
+  7:
+  8: public static void main(String argv[]){
+  9:  (new Planner()).start();
+ 10: }
+ 11:
+ 12: Planner(){
+ 13:  rand = new Random();
+ 14: }
+ 15:
+ 16: public void start(){
+ 17:  initOperators();
+ 18:  Vector goalList     = initGoalList();
+ 19:  Vector initialState = initInitialState();
+ 20:
+ 21:  Hashtable theBinding = new Hashtable();
+ 22:  plan = new Vector();
+ 23:  planning(goalList,initialState,theBinding);
+ 24:
+ 25:  System.out.println("***** This is a plan! *****");
+ 26:   for(int i = 0 ; i < plan.size() ; i++){
+ 27:    Operator op = (Operator)plan.elementAt(i);	    
+ 28:    System.out.println((op.instantiate(theBinding)).name);
+ 29:   }
+ 30:  }
+ 31:
+ 32: private boolean planning(Vector theGoalList,
+ 33:                          Vector theCurrentState,
+ 34:                          Hashtable theBinding){
+ 35:  System.out.println("*** GOALS ***" + theGoalList);
+ 36:  if(theGoalList.size() == 1){
+ 37:   String aGoal = (String)theGoalList.elementAt(0);
+ 38:   if(planningAGoal(aGoal,theCurrentState,theBinding,0) != -1){
+ 39:    return true;
+ 40:   } else {
+ 41:    return false;
+ 42:   }
+ 43:  } else {
+ 44:   String aGoal = (String)theGoalList.elementAt(0);
+ 45:   int cPoint = 0;
+ 46:   while(cPoint < operators.size()){
+ 47:    //System.out.println("cPoint:"+cPoint);
+ 48:    // Store original binding
+ 49:    Hashtable orgBinding = new Hashtable();
+ 50:    for(Enumeration e = theBinding.keys() ; e.hasMoreElements();){
+ 51:     String key = (String)e.nextElement();
+ 52:     String value = (String)theBinding.get(key);
+ 53:     orgBinding.put(key,value);
+ 54:    }
+ 55:    Vector orgState = new Vector();
+ 56:    for(int i = 0; i < theCurrentState.size() ; i++){
+ 57:     orgState.addElement(theCurrentState.elementAt(i));
+ 58:    }
+ 59:
+ 60:    int tmpPoint = planningAGoal(aGoal,theCurrentState,theBinding,cPoint);
+ 61:    //System.out.println("tmpPoint: "+tmpPoint);
+ 62:    if(tmpPoint != -1){
+ 63:     theGoalList.removeElementAt(0);
+ 64:     System.out.println(theCurrentState);
+ 65:     if(planning(theGoalList,theCurrentState,theBinding)){
+ 66:      //System.out.println("Success !");
+ 67:      return true;
+ 68:     } else {
+ 69:      cPoint = tmpPoint;
+ 70:      //System.out.println("Fail::"+cPoint);
+ 71:      theGoalList.insertElementAt(aGoal,0);
+ 72:	  
+ 73:      theBinding.clear();
+ 74:      for(Enumeration e=orgBinding.keys();e.hasMoreElements();){
+ 75:       String key = (String)e.nextElement();
+ 76:       String value = (String)orgBinding.get(key);
+ 77:       theBinding.put(key,value);
+ 78:      }
+ 79:      theCurrentState.removeAllElements();
+ 80:      for(int i = 0 ; i < orgState.size() ; i++){
+ 81:       theCurrentState.addElement(orgState.elementAt(i));
+ 82:      }
+ 83:     }
+ 84:    } else {
+ 85:     theBinding.clear();
+ 86:     for(Enumeration e=orgBinding.keys();e.hasMoreElements();){
+ 87:      String key = (String)e.nextElement();
+ 88:      String value = (String)orgBinding.get(key);
+ 89:      theBinding.put(key,value);
+ 90:     }
+ 91:     theCurrentState.removeAllElements();
+ 92:     for(int i = 0 ; i < orgState.size() ; i++){
+ 93:      theCurrentState.addElement(orgState.elementAt(i));
+ 94:     }
+ 95:     return false;
+ 96:    }
+ 97:   }
+ 98:   return false;
+ 99:  }
+100: }
+101:
+102: private int planningAGoal(String theGoal,Vector theCurrentState,
+103:                           Hashtable theBinding,int cPoint){
+104:  System.out.println("**"+theGoal);
+105:  int size = theCurrentState.size();
+106:  for(int i =  0; i < size ; i++){
+107:   String aState = (String)theCurrentState.elementAt(i);
+108:   if((new Unifier()).unify(theGoal,aState,theBinding)){
+109:    return 0;
+110:   }
+111:  }
+112:
+113:  int randInt = Math.abs(rand.nextInt()) 0perators.size();
+114:  Operator op = (Operator)operators.elementAt(randInt);
+115:  operators.removeElementAt(randInt);
+116:  operators.addElement(op);
+117:
+118:  for(int i = cPoint ; i < operators.size() ; i++){
+119:   Operator anOperator = rename((Operator)operators.elementAt(i));
+120:   // 現在のCurrent state, Binding, planをbackup
+121:   Hashtable orgBinding = new Hashtable();
+122:   for(Enumeration e = theBinding.keys() ; e.hasMoreElements();){
+123:    String key = (String)e.nextElement();
+124:    String value = (String)theBinding.get(key);
+125:    orgBinding.put(key,value);
+126:   }
+127:   Vector orgState = new Vector();
+128:   for(int j = 0; j < theCurrentState.size() ; j++){
+129:    orgState.addElement(theCurrentState.elementAt(j));
+130:   }
+131:   Vector orgPlan = new Vector();
+132:   for(int j = 0; j < plan.size() ; j++){
+133:    orgPlan.addElement(plan.elementAt(j));
+134:   }
+135:
+136:   Vector addList = (Vector)anOperator.getAddList();
+137:   for(int j = 0 ; j < addList.size() ; j++){
+138:    if((new Unifier()).unify(theGoal,
+139:                             (String)addList.elementAt(j),
+140:                             theBinding)){
+141:     Operator newOperator = anOperator.instantiate(theBinding);
+142:     Vector newGoals = (Vector)newOperator.getIfList();
+143:     System.out.println(newOperator.name);
+144:     if(planning(newGoals,theCurrentState,theBinding)){
+145:      System.out.println(newOperator.name);
+146:      plan.addElement(newOperator);
+147:      theCurrentState =
+148:       newOperator.applyState(theCurrentState);
+149:      return i+1;
+150:     } else {
+151:      // 失敗したら元に戻す．
+152:      theBinding.clear();
+153:      for(Enumeration e=orgBinding.keys();e.hasMoreElements();){
+154:       String key = (String)e.nextElement();
+155:       String value = (String)orgBinding.get(key);
+156:       theBinding.put(key,value);
+157:      }
+158:      theCurrentState.removeAllElements();
+159:      for(int k = 0 ; k < orgState.size() ; k++){
+160:       theCurrentState.addElement(orgState.elementAt(k));
+161:      }
+162:      plan.removeAllElements();
+163:      for(int k = 0 ; k < orgPlan.size() ; k++){
+164:       plan.addElement(orgPlan.elementAt(k));
+165:      }
+166:     }
+167:    }		
+168:   }
+169:  }
+170:  return -1;
+171: }
+172:    
+173: int uniqueNum = 0;
+174: private Operator rename(Operator theOperator){
+175:  Operator newOperator = theOperator.getRenamedOperator(uniqueNum);
+176:  uniqueNum = uniqueNum + 1;
+177:  return newOperator;
+178: }
+179:
+180: private Vector initGoalList(){
+181:  Vector goalList = new Vector();
+182:  goalList.addElement("B on C");
+183:  goalList.addElement("A on B");
+184:  return goalList;
+185: }
+186:    
+187: private Vector initInitialState(){
+188:  Vector initialState = new Vector();
+189:  initialState.addElement("clear A");
+190:  initialState.addElement("clear B");
+191:  initialState.addElement("clear C");
+192:
+193:  initialState.addElement("ontable A");
+194:  initialState.addElement("ontable B");
+195:  initialState.addElement("ontable C");
+196:  initialState.addElement("handEmpty");
+197:  return initialState;
+198: }
+199:    
+200: private void initOperators(){
+201:  operators = new Vector();
+202:
+203:  // OPERATOR 1
+204:  /// NAME
+205:  String name1 = new String("Place ?x on ?y");
+206:  /// IF
+207:  Vector ifList1 = new Vector();
+208:  ifList1.addElement(new String("clear ?y"));
+209:  ifList1.addElement(new String("holding ?x"));
+210:  /// ADD-LIST
+211:  Vector addList1 = new Vector();
+212:  addList1.addElement(new String("?x on ?y"));
+213:  addList1.addElement(new String("clear ?x"));
+214:  addList1.addElement(new String("handEmpty"));
+215:  /// DELETE-LIST
+216:  Vector deleteList1 = new Vector();
+217:  deleteList1.addElement(new String("clear ?y"));
+218:  deleteList1.addElement(new String("holding ?x"));
+219:  Operator operator1 =
+220:   new Operator(name1,ifList1,addList1,deleteList1);
+221:  operators.addElement(operator1);
+222:
+223:  // OPERATOR 2
+224:  /// NAME
+225:  String name2 = new String("remove ?x from on top ?y");
+226:  /// IF
+227:  Vector ifList2 = new Vector();
+228:  ifList2.addElement(new String("?x on ?y"));
+229:  ifList2.addElement(new String("clear ?x"));
+230:  ifList2.addElement(new String("handEmpty"));
+231:  /// ADD-LIST
+232:  Vector addList2 = new Vector();
+233:  addList2.addElement(new String("clear ?y"));
+234:  addList2.addElement(new String("holding ?x"));
+235:  /// DELETE-LIST
+236:  Vector deleteList2 = new Vector();
+237:  deleteList2.addElement(new String("?x on ?y"));
+238:  deleteList2.addElement(new String("clear ?x"));
+239:  deleteList2.addElement(new String("handEmpty"));
+240:  Operator operator2 =
+241:   new Operator(name2,ifList2,addList2,deleteList2);
+242:  operators.addElement(operator2);
+243:
+244:  // OPERATOR 3
+245:  /// NAME
+246:  String name3 = new String("pick up ?x from the table");
+247:  /// IF
+248:  Vector ifList3 = new Vector();
+249:  ifList3.addElement(new String("ontable ?x"));
+250:  ifList3.addElement(new String("clear ?x"));
+251:  ifList3.addElement(new String("handEmpty"));
+252:  /// ADD-LIST
+253:  Vector addList3 = new Vector();
+254:  addList3.addElement(new String("holding ?x"));
+255:  /// DELETE-LIST
+256:  Vector deleteList3 = new Vector();
+257:  deleteList3.addElement(new String("ontable ?x"));
+258:  deleteList3.addElement(new String("clear ?x"));
+259:  deleteList3.addElement(new String("handEmpty"));
+260:  Operator operator3 =
+261:   new Operator(name3,ifList3,addList3,deleteList3);
+262:  operators.addElement(operator3);
+263:
+264:  // OPERATOR 4
+265:  /// NAME
+266:  String name4 = new String("put ?x down on the table");
+267:  /// IF
+268:  Vector ifList4 = new Vector();
+269:  ifList4.addElement(new String("holding ?x"));
+270:  /// ADD-LIST
+271:  Vector addList4 = new Vector();
+272:  addList4.addElement(new String("ontable ?x"));
+273:  addList4.addElement(new String("clear ?x"));
+274:  addList4.addElement(new String("handEmpty"));
+275:  /// DELETE-LIST
+276:  Vector deleteList4 = new Vector();
+277:  deleteList4.addElement(new String("holding ?x"));
+278:  Operator operator4 =
+279:   new Operator(name4,ifList4,addList4,deleteList4);
+280:  operators.addElement(operator4);
+281: }
+282:}
+283:
+284:class Operator{
+285: String name;
+286: Vector ifList;
+287: Vector addList;
+288: Vector deleteList;
+289:
+290: Operator(String theName,Vector theIfList,
+291:          Vector theAddList,Vector theDeleteList){
+292:  name       = theName;
+293:  ifList     = theIfList;
+294:  addList    = theAddList;
+295:  deleteList = theDeleteList;
+296: }
+297:
+298: public Vector getAddList(){
+299:  return addList;
+300: }
+301:
+302: public Vector getDeleteList(){
+303:  return deleteList;
+304: }
+305:
+306: public Vector getIfList(){
+307:  return ifList;
+308: }
+309:
+310: public String toString(){
+311:  String result =
+312:   "NAME: "+name + "\n" +
+313:   "IF :"+ifList + "\n" +
+314:   "ADD:"+addList + "\n" +
+315:   "DELETE:"+deleteList;
+316:  return result;
+317: }
+318:
+319: public Vector applyState(Vector theState){
+320:  for(int i = 0 ; i < addList.size() ; i++){
+321:   theState.addElement(addList.elementAt(i));
+322:  }
+323:  for(int i = 0 ; i < deleteList.size() ; i++){
+324:   theState.removeElement(deleteList.elementAt(i));
+325:  }
+326:  return theState;
+327: }
+328:
+329: public Operator getRenamedOperator(int uniqueNum){
+330:  Vector vars = new Vector();
+331:  // IfListの変数を集める
+332:  for(int i = 0 ; i < ifList.size() ; i++){
+333:   String anIf = (String)ifList.elementAt(i);
+334:   vars = getVars(anIf,vars);
+335:  }
+336:  // addListの変数を集める
+337:  for(int i = 0 ; i < addList.size() ; i++){
+338:   String anAdd = (String)addList.elementAt(i);
+339:   vars = getVars(anAdd,vars);
+340:  }
+341:  // deleteListの変数を集める
+342:  for(int i = 0 ; i < deleteList.size() ; i++){
+343:   String aDelete = (String)deleteList.elementAt(i);
+344:   vars = getVars(aDelete,vars);
+345:  }
+346:  Hashtable renamedVarsTable = makeRenamedVarsTable(vars,uniqueNum);
+347:	
+348:  // 新しいIfListを作る
+349:  Vector newIfList = new Vector();
+350:  for(int i = 0 ; i < ifList.size() ; i++){
+351:   String newAnIf =
+352:    renameVars((String)ifList.elementAt(i),renamedVarsTable);
+353:    newIfList.addElement(newAnIf);
+354:  }
+355:  // 新しいaddListを作る
+356:  Vector newAddList = new Vector();
+357:  for(int i = 0 ; i < addList.size() ; i++){
+358:   String newAnAdd =
+359:    renameVars((String)addList.elementAt(i),renamedVarsTable);
+360:   newAddList.addElement(newAnAdd);
+361:  }
+362:  // 新しいdeleteListを作る
+363:  Vector newDeleteList = new Vector();
+364:  for(int i = 0 ; i < deleteList.size() ; i++){
+365:   String newADelete =
+366:    renameVars((String)deleteList.elementAt(i),renamedVarsTable);
+367:   newDeleteList.addElement(newADelete);
+368:  }
+369:  // 新しいnameを作る
+370:  String newName = renameVars(name,renamedVarsTable);
+371:  return new Operator(newName,newIfList,newAddList,newDeleteList);
+372: }
+373:
+374: private Vector getVars(String thePattern,Vector vars){
+375:  StringTokenizer st = new StringTokenizer(thePattern);
+376:  for(int i = 0 ; i < st.countTokens();){
+377:   String tmp = st.nextToken();
+378:   if(var(tmp)){
+379:    vars.addElement(tmp);
+380:   }
+381:  }
+382:  return vars;
+383: }
+384:
+385: private Hashtable makeRenamedVarsTable(Vector vars,int uniqueNum){
+386:  Hashtable result = new Hashtable();
+387:  for(int i = 0 ; i < vars.size() ; i++){
+388:   String newVar = (String)vars.elementAt(i) + uniqueNum;
+389:   result.put((String)vars.elementAt(i),newVar);
+390:  }
+391:  return result;
+392: }
+393:    
+394: private String renameVars(String thePattern,
+395:                           Hashtable renamedVarsTable){
+396:  String result = new String();
+397:  StringTokenizer st = new StringTokenizer(thePattern);
+398:  for(int i = 0 ; i < st.countTokens();){
+399:   String tmp = st.nextToken();
+400:   if(var(tmp)){
+401:    result = result + " " +
+402:             (String)renamedVarsTable.get(tmp);
+403:   } else {
+404:    result = result + " " + tmp;
+405:   }
+406:  }
+407:  return result.trim();
+408: }
+409:
+410:    
+411: public Operator instantiate(Hashtable theBinding){
+412:  // name を具体化
+413:  String newName = instantiateString(name,theBinding);
+414:  // ifList    を具体化
+415:  Vector newIfList = new Vector();
+416:  for(int i = 0 ; i < ifList.size() ; i++){
+417:   String newIf = 
+418:    instantiateString((String)ifList.elementAt(i),theBinding);
+419:   newIfList.addElement(newIf);
+420:  }
+421:  // addList   を具体化
+422:  Vector newAddList = new Vector();
+423:  for(int i = 0 ; i < addList.size() ; i++){
+424:   String newAdd =
+425:    instantiateString((String)addList.elementAt(i),theBinding);
+426:   newAddList.addElement(newAdd);
+427:  }
+428:  // deleteListを具体化
+429:  Vector newDeleteList = new Vector();
+430:  for(int i = 0 ; i < deleteList.size() ; i++){
+431:   String newDelete =
+432:    instantiateString((String)deleteList.elementAt(i),theBinding);
+433:   newDeleteList.addElement(newDelete);
+434:  }
+435:  return new Operator(newName,newIfList,newAddList,newDeleteList);
+436: }
+437:
+438: private String instantiateString(String thePattern, Hashtable theBinding){
+439:  String result = new String();
+440:  StringTokenizer st = new StringTokenizer(thePattern);
+441:  for(int i = 0 ; i < st.countTokens();){
+442:   String tmp = st.nextToken();
+443:   if(var(tmp)){
+444:    String newString = (String)theBinding.get(tmp);
+445:    if(newString == null){
+446:     result = result + " " + tmp;
+447:    } else {
+448:     result = result + " " + newString;
+449:    }
+450:   } else {
+451:    result = result + " " + tmp;
+452:   }
+453:  }
+454:  return result.trim();
+455: }
+456:
+457: private boolean var(String str1){
+458:  // 先頭が ? なら変数
+459:  return str1.startsWith("?");
+460: }
+461:}
+462:
+463:class Unifier {
+464: StringTokenizer st1;
+465: String buffer1[];    
+466: StringTokenizer st2;
+467: String buffer2[];
+468: Hashtable vars;
+469:    
+470: Unifier(){
+471:  //vars = new Hashtable();
+472: }
+473:
+474: public boolean unify(String string1,String string2,Hashtable theBindings){
+475:  Hashtable orgBindings = new Hashtable();
+476:  for(Enumeration e = theBindings.keys() ; e.hasMoreElements();){
+477:   String key = (String)e.nextElement();
+478:   String value = (String)theBindings.get(key);
+479:   orgBindings.put(key,value);
+480:  }
+481:  this.vars = theBindings;
+482:  if(unify(string1,string2)){
+483:   return true;
+484:  } else {
+485:   // 失敗したら元に戻す．
+486:   theBindings.clear();
+487:   for(Enumeration e = orgBindings.keys() ; e.hasMoreElements();){
+488:    String key = (String)e.nextElement();
+489:    String value = (String)orgBindings.get(key);
+490:    theBindings.put(key,value);
+491:   }
+492:   return false;
+493:  }
+494: }
+495:
+496: public boolean unify(String string1,String string2){
+497:  // 同じなら成功
+498:  if(string1.equals(string2)) return true;
+499:
+500:  // 各々トークンに分ける
+501:  st1 = new StringTokenizer(string1);
+502:  st2 = new StringTokenizer(string2);
+503:
+504:  // 数が異なったら失敗
+505:  if(st1.countTokens() != st2.countTokens()) return false;
+506:
+507:  // 定数同士
+508:  int length = st1.countTokens();
+509:  buffer1 = new String[length];
+510:  buffer2 = new String[length];
+511:  for(int i = 0 ; i < length; i++){
+512:   buffer1[i] = st1.nextToken();
+513:   buffer2[i] = st2.nextToken();
+514:  }
+515:
+516:  // 初期値として
+517:  if(this.vars.size() != 0){
+518:   for(Enumeration keys = vars.keys(); keys.hasMoreElements();){
+519:    String key = (String)keys.nextElement();
+520:    String value = (String)vars.get(key);
+521:    replaceBuffer(key,value);
+522:   }
+523:  }
+524:
+525:  for(int i = 0 ; i < length ; i++){
+526:   if(!tokenMatching(buffer1[i],buffer2[i])){
+527:    return false;
+528:   }
+529:  }
+530:
+531:  return true;
+532: }
+533:
+534: boolean tokenMatching(String token1,String token2){
+535:  if(token1.equals(token2)) return true;
+536:  if( var(token1) && !var(token2)) return varMatching(token1,token2);
+537:  if(!var(token1) &&  var(token2)) return varMatching(token2,token1);
+538:  if( var(token1) &&  var(token2)) return varMatching(token1,token2);
+539:  return false;
+540: }
+541:
+542: boolean varMatching(String vartoken,String token){
+543:  if(vars.containsKey(vartoken)){
+544:   if(token.equals(vars.get(vartoken))){
+545:    return true;
+546:   } else {
+547:   return false;
+548:   }
+549:  } else {
+550:   replaceBuffer(vartoken,token);
+551:   if(vars.contains(vartoken)){
+552:    replaceBindings(vartoken,token);
+553:   }
+554:   vars.put(vartoken,token);
+555:  }
+556:  return true;
+557: }
+558:
+559: void replaceBuffer(String preString,String postString){
+560:  for(int i = 0 ; i < buffer1.length ; i++){
+561:   if(preString.equals(buffer1[i])){
+562:    buffer1[i] = postString;
+563:   }
+564:   if(preString.equals(buffer2[i])){
+565:    buffer2[i] = postString;
+566:   }
+567:  }
+568: }
+569:    
+570: void replaceBindings(String preString,String postString){
+571:  Enumeration keys;
+572:  for(keys = vars.keys(); keys.hasMoreElements();){
+573:   String key = (String)keys.nextElement();
+574:   if(preString.equals(vars.get(key))){
+575:    vars.put(key,postString);
+576:   }
+577:  }
+578: }
+579:    
+580: boolean var(String str1){
+581:  // 先頭が ? なら変数
+582:  return str1.startsWith("?");
+583: }
+584:}
+585:

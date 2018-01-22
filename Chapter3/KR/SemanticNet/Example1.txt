@@ -1,0 +1,33 @@
+tornado[1]% java Example
+java Example
+*** Links ***
+baseball  =is-a=>  sports
+Taro  =is-a=>  NIT-student
+Taro  =speciality=>  AI
+Ferrari  =is-a=>  car
+car  =has-a=>  engine
+( Ferrari  =has-a=>  engine )
+Taro  =hobby=>  baseball
+Taro  =own=>  Ferrari
+NIT-student  =is-a=>  student
+( Taro  =is-a=>  student )
+student  =donot=>  study
+( NIT-student  =donot=>  study )
+( Taro  =donot=>  study )
+*** Nodes ***
+baseball
+sports
+Taro
+NIT-student
+AI
+Ferrari
+car
+engine
+student
+study
+*** Query ***
+?y  =own=>  Ferrari
+?y  =is-a=>  student
+?y  =hobby=>  baseball
+[{?y=Taro}]
+tornado[2]%

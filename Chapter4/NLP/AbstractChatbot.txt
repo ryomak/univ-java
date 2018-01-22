@@ -1,0 +1,476 @@
+1:
+2:import org.jivesoftware.smack.*;
+3:import org.jivesoftware.smack.packet.*;
+4:import org.jivesoftware.smackx.muc.*;
+5:import org.xml.sax.SAXException;
+6:
+7:import java.net.*;
+8:import java.io.*;
+9:import java.text.SimpleDateFormat;
+10:import java.util.*;
+11:
+12:import javax.xml.parsers.*;
+13:
+14:/**
+15: * 通信や受信メッセージの処理など，チャットボットで汎用的に使う機能を実装した抽象クラス．
+16: */
+17:public abstract class AbstractChatbot implements MessageListener, Runnable {
+18:
+19:    /**
+20:     * 形態素解析APIのURL
+21:     */
+22:    protected String maServURL;
+23:
+24:    /**
+25:     * 係り受け解析APIのURL
+26:     */
+27:    protected String daServURL;
+28:
+29:    /**
+30:     * XMPPサーバのURL
+31:     * (ChatbotクラスのXMPP_SERVERで指定)
+32:     */
+33:    public String xmppServer;
+34:    
+35:    /**
+36:     *  Yahoo Web API のアプリケーションID 
+37:     * (ChatbotクラスのYAHOO_APP_IDで指定)
+38:     */
+39:    protected String yahooAppId;
+40:
+41:    /**
+42:     *  チャットボットの名前 
+43:     * (ChatbotクラスのBOT_NAMEで指定)
+44:     */
+45:    protected String botName;
+46:
+47:    /**
+48:     * チャットボットのパスワード 
+49:     * (ChatbotクラスのBOT_PASSで指定)
+50:     */
+51:    protected String botPass;
+52:    
+53:    /**
+54:     * チャット履歴
+55:     */
+56:    protected List<Message> history;
+57:    
+58:    /**
+59:     * あるチャットで最後に発言した時刻 (ミリ秒) を記録するMap
+60:     */
+61:    protected Map<Chat, Long> lastUttTimeMap;
+62:    
+63:    /**
+64:     * 話題を振るまでに沈黙を耐える時間 (秒)
+65:     */
+66:    protected int silenceLimit = 60;
+67:    
+68:    /**
+69:     * Proxyのホスト名
+70:     */
+71:    public String proxyHost;
+72:
+73:    /**
+74:     * Proxyのポート番号
+75:     */
+76:    public String proxyPort;
+77:
+78:    protected SAXParser saxParser;
+79:    protected SimpleDateFormat sdf;
+80:    
+81:    protected XMPPConnection conn;
+82:    protected ChatManager chatMan;
+83:    protected Thread botThread;
+84:    
+85:    protected Map<String,Chat> chatMap;
+86:    protected Map<String,MultiUserChat> chatRoomMap;
+87:    
+88:   
+89:    /**
+90:     * コンストラクタ 
+91:     */
+92:    public AbstractChatbot(String yahooAppId, 
+93:                           String botName, 
+94:                           String botPass, 
+95:                           String xmppServer,
+96:                           String proxyHost,
+97:                           String proxyPort) {
+98:        this.yahooAppId = yahooAppId;
+99:        this.botName = botName;
+100:        this.botPass = botPass;
+101:        this.xmppServer = xmppServer;
+102:        this.proxyHost = proxyHost;
+103:        this.proxyPort = proxyPort;
+104:        maServURL = "http://jlp.yahooapis.jp/MAService/V1/parse?appid=" 
+105:            + yahooAppId + "&response=surface,reading,pos,baseform,feature&sentence=";
+106:        daServURL = "http://jlp.yahooapis.jp/DAService/V1/parse?appid="
+107:            + yahooAppId + "&sentence=";
+108:        if (proxyHost != null && ! proxyHost.isEmpty()) {
+109:            System.setProperty("http.proxyHost", proxyHost);
+110:            System.setProperty("http.proxyPort", proxyPort);
+111:        }
+112:        conn = new XMPPConnection(new ConnectionConfiguration(xmppServer, 5222));
+113:        chatMap = new HashMap<String, Chat>();
+114:        chatRoomMap = new HashMap<String, MultiUserChat>();
+115:        initSAXParser();
+116:        sdf = new SimpleDateFormat("HH:mm:ss ");
+117:        history = new ArrayList<Message>();
+118:        lastUttTimeMap = new HashMap<Chat, Long>();
+119:    }
+120:    
+121:    
+122:    /**
+123:     * 受信したメッセージを処理する
+124:     * @param chat 
+125:     * @param message 受信したメッセージ
+126:     */
+127:    public void processMessage(Chat chat, Message message) {
+128:        history.add(message);
+129:        String senderName = message.getFrom();
+130:        System.out.println(sdf.format(new Date()) + 
+131:            senderName+"からのメッセージ: "+message.getBody());
+132:        recordUtteranceTime(chat);
+133:        String resText = createResponse(senderName, message.getBody());
+134:        try {
+135:            // 0.5秒待つ
+136:            Thread.sleep(500);
+137:        } catch (InterruptedException e) {
+138:            // do nothing
+139:        }
+140:        // 応答メッセージを送る
+141:        sendMessage(chat, resText);
+142:
+143:    }
+144:    
+145:    
+146:    /**
+147:     * senderから来たメッセージに対する返答文を生成し，返す
+148:     * @param sender メッセージの送信者 (アカウント名@XMPPサーバ名)
+149:     * @param text メッセージ
+150:     * @return 返答する文
+151:     */
+152:    public abstract String createResponse(String sender, String text);
+153:
+154:    /**
+155:     * target に向けて発信するメッセージの文を生成し，返す
+156:     * @param target 宛先　(アカウント名@XMPPサーバ名)
+157:     * @return 送信する文
+158:     */
+159:    public abstract String createMessage(String target);
+160:    
+161:    
+162:    /**
+163:     * SAXParser を初期化
+164:     */
+165:    private void initSAXParser() {
+166:        try {
+167:            saxParser = SAXParserFactory.newInstance().newSAXParser();
+168:        } catch (SAXException e) {
+169:            e.printStackTrace();
+170:        } catch (ParserConfigurationException e) {
+171:            e.printStackTrace();
+172:        }
+173:    }
+174:
+175:    /**
+176:     * ログイン
+177:     */
+178:    public void login() {
+179:        try {
+180:            conn.connect();
+181:            SASLAuthentication.supportSASLMechanism("PLAIN", 0);
+182:            conn.login(botName, botPass);
+183:            chatMan = conn.getChatManager();
+184:            System.out.println(xmppServer + "に"+botName+"としてログインしました ");
+185:        } catch (XMPPException e) {
+186:            System.err.println("[AbstractChatbot#login] " +
+187:                "XMPPサーバへのログインに失敗しました");
+188:            e.printStackTrace();
+189:        }
+190:    }
+191:    
+192:    public Chat createChatWith(String targetName) {
+193:        Chat chat = chatMan.createChat(targetName, this);
+194:        chatMap.put(targetName, chat);
+195:        return chat;
+196:    }
+197:    
+198:    public Chat getChatWith(String targetName) {
+199:        Chat chat = chatMap.get(targetName);
+200:        if (chat != null) {
+201:            return chat;
+202:        } else {
+203:            chat = createChatWith(targetName);
+204:            return chat;
+205:        }
+206:    }
+207:    
+208:    /**
+209:     * createMessageが生成した文をメッセージとして送る
+210:     * @param targetName メッセージの送信先
+211:     */
+212:    public void sendMessage(String targetName) {
+213:        sendMessage(targetName, createMessage(targetName));
+214:    }
+215:    
+216:    /**
+217:     * メッセージを送る
+218:     * @param targetName メッセージの送信先
+219:     * @param text メッセージ
+220:     */
+221:    public void sendMessage(String targetName, String text) {
+222:        Chat chat = getChatWith(targetName);
+223:        Message message = new Message(targetName);
+224:        message.setBody(text);
+225:        try {
+226:            chat.sendMessage(message);
+227:            recordUtteranceTime(chat);
+228:            System.out.println(sdf.format(new Date()) +
+229:                targetName + "へメッセージを送信: " + text);
+230:        } catch (XMPPException e) {
+231:            System.err.println("[AbstractChatbot#sendMessage] " +
+232:                targetName + "へのメッセージ送信に失敗しました: " + text);
+233:        }
+234:    }
+235:
+236:    /**
+237:     * メッセージを送る
+238:     * @param chat 送信するチャット
+239:     * @param text メッセージ
+240:     */
+241:    public void sendMessage(Chat chat, String text) {
+242:        String targetName = chat.getParticipant();
+243:        Message message = new Message(targetName);
+244:        message.setBody(text);
+245:        try {
+246:            chat.sendMessage(message);
+247:            recordUtteranceTime(chat);
+248:            System.out.println(sdf.format(new Date()) +
+249:                targetName + "へメッセージを送信: " + text);
+250:        } catch (XMPPException e) {
+251:            System.err.println("[AbstractChatbot#sendMessage] " +
+252:                targetName + "へのメッセージ送信に失敗しました: " + text);
+253:        }
+254:    }
+255:    
+256:
+257:    
+258:    /**
+259:     * Yahoo形態素解析の結果をMorphemeオブジェクトのリストにして返す
+260:     * @param text 解析したい日本語の文
+261:     * @return 形態素解析の結果
+262:     */
+263:    public List<Morpheme> analyzeMorpheme(String text) {
+264:        try {
+265:            String encoded = URLEncoder.encode(text, "UTF-8");
+266:            URL url = new URL(maServURL + encoded);
+267:            URLConnection conn = url.openConnection();
+268:            MorphSAXHandler maHandler = new MorphSAXHandler();
+269:            saxParser.parse(conn.getInputStream(), maHandler);
+270:            return maHandler.getMorphemes();
+271:        } catch (UnsupportedEncodingException e) {
+272:            // nothing to do
+273:            e.printStackTrace();
+274:        } catch (MalformedURLException e) {
+275:            // nothing to do
+276:            e.printStackTrace();
+277:        } catch (SAXException e) {
+278:            System.err.println("[AbstractChatBot#analyzeMorpheme] " +
+279:            "Yahoo 形態素解析 Web API が返した解析結果XMLの解釈に失敗しました");
+280:        } catch (IOException e) {
+281:            System.err.println("[AbstractChatBot#analyzeMorpheme] " +
+282:            "Yahoo 形態素解析 Web API への接続に失敗しました");
+283:            e.printStackTrace();
+284:        }
+285:        return null;
+286:    }
+287:
+288:
+289:    /**
+290:     * Yahoo形態素解析の結果のXMLをそのまま返す
+291:     * @param text
+292:     * @return 形態素解析結果のXMLそのまま
+293:     */
+294:    public String getYahooMorphemeAnalysisXML(String text) {
+295:        StringBuffer sb = new StringBuffer();
+296:        try {
+297:            String encoded = URLEncoder.encode(text, "UTF-8");
+298:            URL url = new URL(maServURL + encoded);
+299:            URLConnection conn = url.openConnection();
+300:            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+301:            for (String line = in.readLine(); line != null; line = in.readLine()) {
+302:                sb.append(line);
+303:                sb.append("\n");
+304:            }
+305:        } catch (IOException e) {
+306:            e.printStackTrace();
+307:        }
+308:        return sb.toString();
+309:    }
+310:    
+311:   
+312:    /**
+313:     * Yahoo係り受け解析の結果のXMLをそのまま返す
+314:     * @param text
+315:     * @return 係り受け解析結果のXMLそのまま
+316:     */
+317:    public String getYahooDependencyAnalysisXML(String text) {
+318:        StringBuffer sb = new StringBuffer();
+319:        try {
+320:            String encoded = URLEncoder.encode(text, "UTF-8");
+321:            URL url = new URL(daServURL + encoded);
+322:            URLConnection conn = url.openConnection();
+323:            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+324:            for (String line = in.readLine(); line != null; line = in.readLine()) {
+325:                sb.append(line);
+326:                sb.append("\n");
+327:            }
+328:        } catch (IOException e) {
+329:            e.printStackTrace();
+330:        }
+331:        return sb.toString();
+332:    }
+333:
+334:    /**
+335:     * Yahoo係り受け解析の結果をChunkDependencyTreeオブジェクトにして返す
+336:     * @param text 解析したい日本語の文
+337:     * @return 係り受け解析の結果
+338:     */
+339:    public Sentence analyzeDependency(String text) {
+340:        try {
+341:            String encoded = URLEncoder.encode(text, "UTF-8");
+342:            URL url = new URL(daServURL + encoded);
+343:            URLConnection conn = url.openConnection();
+344:            DepSAXHandler depHandler = new DepSAXHandler();
+345:            saxParser.parse(conn.getInputStream(), depHandler);
+346:            return depHandler.getDependencyTree();
+347:        } catch (UnsupportedEncodingException e) {
+348:            // nothing to do
+349:            e.printStackTrace();
+350:        } catch (MalformedURLException e) {
+351:            // nothing to do
+352:            e.printStackTrace();
+353:        } catch (SAXException e) {
+354:            System.err.println("[AbstractChatBot#analyzeDependency] " +
+355:            "Yahoo 係り受け解析 Web API が返した解析結果XMLの解釈に失敗しました");
+356:        } catch (IOException e) {
+357:            System.err.println("[AbstractChatBot#analyzeDependency] " +
+358:            "Yahoo 係り受け解析 Web API への接続に失敗しました");
+359:            e.printStackTrace();
+360:        }
+361:        return null;
+362:    }
+363:    
+364:    /**
+365:     * 発話時刻を記録
+366:     * @param name 発言者
+367:     */
+368:    protected void recordUtteranceTime(Chat chat) {
+369:        lastUttTimeMap.put(chat, System.currentTimeMillis());
+370:    }
+371:    
+372:    /**
+373:     * 話題を振るまでに沈黙を耐える時間を設定
+374:     * @param sec 秒数
+375:     */
+376:    public void setSilenceLimit(int sec) {
+377:        silenceLimit = sec;
+378:    }
+379:    
+380:    /**
+381:     * Webからコンテンツを取得し，文字列を返す．
+382:     * @param url 
+383:     * @return HTML等のコンテンツの文字列
+384:     */
+385:    public String getWebContent(String url) {
+386:        StringBuffer sb = new StringBuffer();
+387:        try {
+388:            URLConnection conn = new URL(url).openConnection();
+389:            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+390:            for (String line = in.readLine(); line != null; line = in.readLine()) {
+391:                sb.append(line);
+392:                sb.append("\n");
+393:            }
+394:        } catch (IOException e) {
+395:            e.printStackTrace();
+396:        }
+397:        return sb.toString();
+398:    }
+399:
+400:    /**
+401:     * Webからコンテンツを取得し，文字列を返す．コンテンツの文字コードを指定する．
+402:     * @param url URL
+403:     * @param enc 文字コード
+404:     * @return HTML等のコンテンツの文字列
+405:     */
+406:    public String getWebContent(String url, String enc) {
+407:        StringBuffer sb = new StringBuffer();
+408:        try {
+409:            URLConnection conn = new URL(url).openConnection();
+410:            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), enc));
+411:            for (String line = in.readLine(); line != null; line = in.readLine()) {
+412:                sb.append(line);
+413:                sb.append("\n");
+414:            }
+415:        } catch (IOException e) {
+416:            e.printStackTrace();
+417:        }
+418:        return sb.toString();
+419:    }
+420:    
+421:
+422:    
+423:    /**
+424:     * 
+425:     */
+426:    public void start() {
+427:        if (botThread == null) { 
+428:            botThread = new Thread(this);
+429:            botThread.start();
+430:        }
+431:    }
+432:    
+433:    /**
+434:     * 
+435:     */
+436:    public void run() {
+437:        Thread current = Thread.currentThread();
+438:        while (botThread == current){
+439:            try {
+440:                Thread.sleep(500);
+441:            } catch (InterruptedException e){
+442:                // do nothing
+443:            } finally {
+444:                Iterator<Chat> i = chatMap.values().iterator();
+445:                while (i.hasNext()) {
+446:                    Chat chat = i.next();
+447:                    if (isWhenToSay(chat)) {
+448:                        sendMessage(chat.getParticipant());
+449:                    }
+450:                }
+451:            }
+452:        }
+453:    }
+454:    
+455:    /**
+456:     * このメソッドが呼び出された瞬間がメッセージを送信すべきタイミングならtrue, 
+457:     * そうでなければfalseを返す
+458:     * @param chat
+459:     * @return メッセージを送信すべきタイミングが否か
+460:     */
+461:    protected boolean isWhenToSay(Chat chat) {
+462:        Long lastUttTime = lastUttTimeMap.get(chat);
+463:        if (lastUttTime == null) {
+464:            recordUtteranceTime(chat);
+465:            lastUttTime = lastUttTimeMap.get(chat);
+466:        }
+467:        // 最後の発言からの経過時間をチェック
+468:        if (System.currentTimeMillis() - lastUttTime > silenceLimit * 1000) {
+469:            return true;
+470:        } else {
+471:            return false;
+472:        }
+473:        
+474:    }
+475:    
+476:}

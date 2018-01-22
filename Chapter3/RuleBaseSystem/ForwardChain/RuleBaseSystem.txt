@@ -1,0 +1,359 @@
+  1:import java.util.*;
+  2:import java.io.*;
+  3:
+  4:/**
+  5: * RuleBaseSystem
+  6: * 
+  7: */
+  8:public class RuleBaseSystem {
+  9: static RuleBase rb;
+ 10: public static void main(String args[]){
+ 11:  rb = new RuleBase();
+ 12:  rb.forwardChain();	
+ 13: }
+ 14:}
+ 15:
+ 16:/**
+ 17: * ワーキングメモリを表すクラス．
+ 18: *
+ 19: * 
+ 20: */
+ 21:class WorkingMemory {
+ 22: Vector assertions;    
+ 23:
+ 24: WorkingMemory(){
+ 25:  assertions = new Vector();
+ 26: }
+ 27:
+ 28: /**
+ 29:  * マッチするアサーションに対するバインディング情報を返す
+ 30:  * （再帰的）
+ 31:  *
+ 32:  * @param     前件を示す Vector
+ 33:  * @return    バインディング情報が入っている Vector
+ 34:  */
+ 35: public Vector matchingAssertions(Vector theAntecedents){
+ 36:  Vector bindings = new Vector();
+ 37:  return matchable(theAntecedents,0,bindings);
+ 38: }
+ 39:
+ 40: private Vector matchable(Vector theAntecedents,int n,Vector bindings){
+ 41:  if(n == theAntecedents.size()){
+ 42:   return bindings;
+ 43:  } else if (n == 0){
+ 44:   boolean success = false;
+ 45:   for(int i = 0 ; i < assertions.size() ; i++){
+ 46:    Hashtable binding = new Hashtable();
+ 47:    if((new Matcher()).matching(
+ 48:     (String)theAntecedents.elementAt(n),
+ 49:     (String)assertions.elementAt(i),
+ 50:      binding)){
+ 51:     bindings.addElement(binding);
+ 52:     success = true;
+ 53:    }
+ 54:   }
+ 55:   if(success){
+ 56:    return matchable(theAntecedents, n+1, bindings);
+ 57:   } else {
+ 58:    return null;
+ 59:   }
+ 60:  } else {
+ 61:   boolean success = false;
+ 62:   Vector newBindings = new Vector();
+ 63:   for(int i = 0 ; i < bindings.size() ; i++){
+ 64:    for(int j = 0 ; j < assertions.size() ; j++){
+ 65:     if((new Matcher()).matching(
+ 66:	  (String)theAntecedents.elementAt(n),
+ 67:      (String)assertions.elementAt(j),
+ 68:      (Hashtable)bindings.elementAt(i))){
+ 69:      newBindings.addElement(bindings.elementAt(i));
+ 70:      success = true;
+ 71:     }
+ 72:    }
+ 73:   }
+ 74:   if(success){
+ 75:    return matchable(theAntecedents,n+1,newBindings);
+ 76:   } else {
+ 77:    return null;
+ 78:   }
+ 79:  }
+ 80: }
+ 81:    
+ 82: /**
+ 83:  * アサーションをワーキングメモリに加える．
+ 84:  *
+ 85:  * @param     アサーションを表す String
+ 86:  */
+ 87: public void addAssertion(String theAssertion){
+ 88:  System.out.println("ADD:"+theAssertion);
+ 89:  assertions.addElement(theAssertion);
+ 90: }
+ 91:
+ 92: /**
+ 93:  * 指定されたアサーションがすでに含まれているかどうかを調べる．
+ 94:  *
+ 95:  * @param     アサーションを表す String
+ 96:  * @return    含まれていれば true，含まれていなければ false
+ 97:  */
+ 98: public boolean contains(String theAssertion){
+ 99:  return assertions.contains(theAssertion);
+100: }
+101:
+102: /**
+103:  * ワーキングメモリの情報をストリングとして返す．
+104:  *
+105:  * @return    ワーキングメモリの情報を表す String
+106:  */
+107: public String toString(){
+108:  return assertions.toString();
+109: }
+110:}    
+111:
+112:
+113:/**
+114: * ルールベースを表すクラス．
+115: *
+116: * 
+117: */
+118:class RuleBase {
+119: String fileName;
+120: FileReader f;
+121: StreamTokenizer st;
+122: WorkingMemory wm;
+123: Vector rules;
+124:    
+125: RuleBase(){
+126:  fileName = "CarShop.data";
+127:  wm = new WorkingMemory();
+128:  wm.addAssertion("my-car is inexpensive");
+129:  wm.addAssertion("my-car has a VTEC engine");
+130:  wm.addAssertion("my-car is stylish");
+131:  wm.addAssertion("my-car has several color models");
+132:  wm.addAssertion("my-car has several seats");
+133:  wm.addAssertion("my-car is a wagon");
+134:  rules = new Vector();
+135:  loadRules(fileName);
+136: }
+137:
+138: /**
+139:  * 前向き推論を行うためのメソッド
+140:  *
+141:  */
+142: public void forwardChain(){
+143:  boolean newAssertionCreated;
+144:  // 新しいアサーションが生成されなくなるまで続ける．
+145:  do {
+146:   newAssertionCreated = false;
+147:   for(int i = 0 ; i < rules.size(); i++){
+148:    Rule aRule = (Rule)rules.elementAt(i);
+149:    System.out.println("apply rule:"+aRule.getName());
+150:    Vector antecedents = aRule.getAntecedents();
+151:    String consequent  = aRule.getConsequent();
+152:    //Hashtable bindings = wm.matchingAssertions(antecedents);
+153:    Vector bindings = wm.matchingAssertions(antecedents);
+154:    if(bindings != null){
+155:     for(int j = 0 ; j < bindings.size() ; j++){
+156:      //後件をインスタンシエーション
+157:      String newAssertion =
+158:       instantiate((String)consequent,
+159:       (Hashtable)bindings.elementAt(j));
+160:      //ワーキングメモリーになければ成功
+161:      if(!wm.contains(newAssertion)){
+162:       System.out.println("Success: "+newAssertion);
+163:       wm.addAssertion(newAssertion);
+164:       newAssertionCreated = true;
+165:      }
+166:     }
+167:    }
+168:   }
+169:   System.out.println("Working Memory"+wm);
+170:  } while(newAssertionCreated);
+171:   System.out.println("No rule produces a new assertion");
+172:  }
+173:
+174: private String instantiate(String thePattern, Hashtable theBindings){
+175:  String result = new String();
+176:  StringTokenizer st = new StringTokenizer(thePattern);
+177:  for(int i = 0 ; i < st.countTokens();){
+178:   String tmp = st.nextToken();
+179:   if(var(tmp)){
+180:    result = result + " " + (String)theBindings.get(tmp);
+181:   } else {
+182:    result = result + " " + tmp;
+183:   }
+184:  }
+185:  return result.trim();
+186: }
+187:
+188: private boolean var(String str1){
+189:  // 先頭が ? なら変数
+190:  return str1.startsWith("?");
+191: }
+192:
+193: private void loadRules(String theFileName){
+194:  String line;
+195:  try{
+196:   int token;
+197:   f = new FileReader(theFileName);
+198:   st = new StreamTokenizer(f);
+199:   while((token = st.nextToken())!= StreamTokenizer.TT_EOF){
+200:    switch(token){
+201:     case StreamTokenizer.TT_WORD:
+202:      String name = null;
+203:      Vector antecedents = null;
+204:      String consequent = null;
+205:      if("rule".equals(st.sval)){
+206:       if(st.nextToken() == '"'){
+207:        name = st.sval;
+208:        st.nextToken();
+209:        if("if".equals(st.sval)){
+210:         antecedents = new Vector();
+211:         st.nextToken();
+212:         while(!"then".equals(st.sval)){
+213:          antecedents.addElement(st.sval);
+214:          st.nextToken();
+215:         }
+216:         if("then".equals(st.sval)){
+217:         st.nextToken();
+218:          consequent = st.sval;
+219:         }
+220:        }
+221:       } 
+222:      }
+223:      rules.addElement(
+224:       new Rule(name,antecedents,consequent));
+225:      break;
+226:     default:
+227:      System.out.println(token);
+228:      break;
+229:    }
+230:   }
+231:  } catch(Exception e){
+232:   System.out.println(e);
+233:  }
+234:  for(int i = 0 ; i < rules.size() ; i++){
+235:   System.out.println(((Rule)rules.elementAt(i)).toString());
+236:  }
+237: }
+238:}
+239:
+240:/**
+241: * ルールを表すクラス．
+242: *
+243: * 
+244: */
+245:class Rule {
+246: String name;
+247: Vector antecedents;
+248: String consequent;
+249:
+250: Rule(String theName,Vector theAntecedents,String theConsequent){
+251:  this.name = theName;
+252:  this.antecedents = theAntecedents;
+253:  this.consequent = theConsequent;
+254: }
+255:
+256: /**
+257:  * ルールの名前を返す．
+258:  *
+259:  * @return    名前を表す String
+260:  */
+261: public String getName(){
+262:  return name;
+263: }
+264:
+265: /**
+266:  * ルールをString形式で返す
+267:  *
+268:  * @return    ルールを整形したString
+269:  */
+270: public String toString(){
+271:  return name+" "+antecedents.toString()+"->"+consequent;
+272: }
+273:
+274: /**
+275:  * ルールの前件を返す．
+276:  *
+277:  * @return    前件を表す Vector
+278:  */
+279: public Vector getAntecedents(){
+280:  return antecedents;
+281: }
+282:
+283: /**
+284:  * ルールの後件を返す．
+285:  *
+286:  * @return    後件を表す String
+287:  */
+288: public String getConsequent(){
+289:  return consequent;
+290: }
+291:}    
+292:
+293:class Matcher {
+294: StringTokenizer st1;
+295: StringTokenizer st2;
+296: Hashtable vars;
+297:    
+298: Matcher(){
+299:  vars = new Hashtable();
+300: }
+301:
+302: public boolean matching(String string1,String string2,
+303:                         Hashtable bindings){
+304:  this.vars = bindings;
+305:  return matching(string1,string2);
+306: }
+307:    
+308: public boolean matching(String string1,String string2){
+309:  //System.out.println(string1);
+310:  //System.out.println(string2);
+311:
+312:  // 同じなら成功
+313:  if(string1.equals(string2)) return true;
+314:
+315:  // 各々トークンに分ける
+316:  st1 = new StringTokenizer(string1);
+317:  st2 = new StringTokenizer(string2);
+318:
+319:  // 数が異なったら失敗
+320:  if(st1.countTokens() != st2.countTokens()) return false;
+321:
+322:  // 定数同士
+323:  for(int i = 0 ; i < st1.countTokens();){
+324:   if(!tokenMatching(st1.nextToken(),st2.nextToken())){
+325:    // トークンが一つでもマッチングに失敗したら失敗
+326:    return false;
+327:   }
+328:  }
+329:
+330:  // 最後まで O.K. なら成功
+331:  return true;
+332: }
+333:
+334: boolean tokenMatching(String token1,String token2){
+335:  //System.out.println(token1+"<->"+token2);
+336:  if(token1.equals(token2)) return true;
+337:  if( var(token1) && !var(token2)) return varMatching(token1,token2);
+338:  if(!var(token1) &&  var(token2)) return varMatching(token2,token1);
+339:  return false;
+340: }
+341:
+342: boolean varMatching(String vartoken,String token){
+343:  if(vars.containsKey(vartoken)){
+344:   if(token.equals(vars.get(vartoken))){
+345:    return true;
+346:   } else {
+347:    return false;
+348:   }
+349:  } else {
+350:   vars.put(vartoken,token);
+351:  }
+352:  return true;
+353: }
+354:
+355: boolean var(String str1){
+356:  // 先頭が ? なら変数
+357:  return str1.startsWith("?");
+358: }
+359:}

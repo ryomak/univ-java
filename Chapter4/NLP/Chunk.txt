@@ -1,0 +1,148 @@
+1:
+2:import java.util.*;
+3:
+4:/**
+5: * •¶ß‚ğ•\‚·ƒNƒ‰ƒX
+6: */
+7:public class Chunk extends ArrayList<Morpheme> {
+8:
+9:    /**
+10:     * •¶ß”Ô†
+11:     */
+12:    int id;
+13:    
+14:    /**
+15:     * ŒW‚èæ‚Ì•¶ß
+16:     */
+17:    Chunk dependencyChunk;
+18:    
+19:    /**
+20:     * ŒW‚èæ‚Ì•¶ß”Ô†
+21:     */
+22:    int dependency;
+23:    
+24:    /**
+25:     * ‚±‚Ì•¶ß‚ÉŒW‚é•¶ß‚ÌƒŠƒXƒg
+26:     */
+27:    List<Chunk> dependents;
+28:
+29:    
+30:    public Chunk() {
+31:        super();
+32:        dependents = new LinkedList<Chunk>();
+33:    }
+34:    
+35:    public void setId(int id) {
+36:        this.id = id;
+37:    }
+38:    
+39:    public void setDependency(int dependency) {
+40:        this.dependency = dependency;
+41:    }
+42:
+43:    public void setMorphemes(List<Morpheme> morphs) {
+44:        for (Iterator<Morpheme> i = iterator(); i.hasNext(); ) {
+45:            remove(i.next());
+46:        }
+47:        addAll(morphs);
+48:    }
+49:    
+50:    public void addMorpheme(Morpheme morph) {
+51:        add(morph);
+52:    }
+53:    
+54:    public void addDependentChunk(Chunk chunk) {
+55:        dependents.add(chunk);
+56:    }
+57:
+58:    public void setDependencyChunk(Chunk chunk) {
+59:        dependencyChunk = chunk;
+60:    }
+61:
+62:    /**
+63:     * ‚±‚Ì•¶ß‚Ìå«‚ÌŒ`‘Ô‘f‚ğ“ü‚ê‘Ö‚¦‚é
+64:     * @param morph ƒZƒbƒg‚·‚éŒ`‘Ô‘f
+65:     */
+66:    public void replaceHeadMorpheme(Morpheme morph) {
+67:        set(size()-1, morph);
+68:    }
+69:    
+70:    /**
+71:     * ‚±‚Ì•¶ß‚Ì•¶ß”Ô†‚ğ•Ô‚·
+72:     * @return •¶ß”Ô†
+73:     */
+74:    public int getId() {
+75:        return id;
+76:    }
+77:    
+78:    /**
+79:     * ‚±‚Ì•¶ß‚ªŒW‚é•¶ß‚Ìid‚ğ•Ô‚·
+80:     * @return ‚±‚Ì•¶ß‚ªŒW‚é•¶ß‚Ìid
+81:     */
+82:    public int getDependency() {
+83:        return dependency;
+84:    }
+85:
+86:    /**
+87:     * ‚±‚Ì•¶ß‚ªŒW‚é•¶ß‚ğ•Ô‚·
+88:     * @return ‚±‚Ì•¶ß‚ªŒW‚é•¶ß
+89:     */
+90:    public Chunk getDependencyChunk() {
+91:        return dependencyChunk;
+92:    }
+93:    
+94:    /**
+95:     * ‚±‚Ì•¶ß‚ÉŒW‚é•¶ß‚ÌƒŠƒXƒg‚ğ•Ô‚·
+96:     * @return ‚±‚Ì•¶ß‚ÉŒW‚é•¶ß‚ÌƒŠƒXƒg
+97:     */
+98:    public List<Chunk> getDependents() {
+99:        return dependents;
+100:    }
+101:
+102:    /**
+103:     * å«‚Å‚ ‚éÅŒã‚ÌŒ`‘Ô‘f‚ğ•Ô‚·
+104:     * @return å«‚Å‚ ‚éÅŒã‚ÌŒ`‘Ô‘f
+105:     */
+106:    public Morpheme getHeadMorpheme() {
+107:        return get(size()-1);
+108:    }
+109:     
+110:    /**
+111:     * ‚±‚Ì•¶ß‚Ì•\‘w•¶š—ñ‚ğ•Ô‚·
+112:     * @return ‚±‚Ì•¶ß‚Ì•\‘w•¶š—ñ
+113:     */
+114:    public String getSurface() {
+115:        StringBuffer sb = new StringBuffer();
+116:        for (Iterator<Morpheme> i = iterator(); i.hasNext(); ) {
+117:            sb.append(i.next().getSurface());
+118:        }
+119:        return sb.toString();
+120:    }
+121:    
+122:    /**
+123:     * ‚±‚Ì•¶ß‚ÉŠÜ‚Ü‚ê‚éŒ`‘Ô‘f‚ÌƒŠƒXƒg‚ğ•\‚·XML•—‚Ì•¶š—ñ‚ğ•Ô‚·
+124:     * @return XML•—‚Ì•¶š—ñ
+125:     */
+126:    public String toString() {
+127:        StringBuffer sb = new StringBuffer();
+128:        sb.append("<Chunk id=\"" + id);
+129:        sb.append("\" dependency=\"" + dependency);
+130:        if (! dependents.isEmpty()) {
+131:            sb.append("\" dependents=\"");
+132:            for (Iterator<Chunk> i = dependents.iterator(); i.hasNext(); ) {
+133:                sb.append(i.next().getId());
+134:                if (i.hasNext()) {
+135:                    sb.append(",");
+136:                }
+137:            }
+138:        }
+139:        sb.append("\">\n");
+140:        for (Iterator<Morpheme> i = iterator(); i.hasNext(); ) {
+141:            sb.append(" ");
+142:            sb.append(i.next().toString());
+143:            sb.append("\n");
+144:        }
+145:        sb.append("</Chunk>");
+146:        return sb.toString();
+147:    }
+148:}

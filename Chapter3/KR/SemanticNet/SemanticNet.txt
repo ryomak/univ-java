@@ -1,0 +1,272 @@
+1:import java.util.*;
+2:
+3:/***
+4: * 意味ネットワーク (Semantic Net)
+5: *
+6: */
+7:public class SemanticNet {
+8:    Vector links;
+9:    Vector nodes;
+10:    Hashtable nodesNameTable;
+11:    
+12:    SemanticNet(){
+13:	links = new Vector();
+14:	nodes = new Vector();
+15:	nodesNameTable = new Hashtable();
+16:    }
+17:
+18:    public void query(Vector theQueries){
+19:	System.out.println("*** Query ***");
+20:	for(int i = 0 ; i < theQueries.size() ; i++){
+21:	    System.out.println(((Link)theQueries.elementAt(i)).toString());
+22:	}
+23:	System.out.println((doQuery(theQueries)).toString());
+24:    }
+25:
+26:    public Vector doQuery(Vector theQueries){
+27:	Vector bindingsList = new Vector();
+28:	for(int i = 0 ; i < theQueries.size() ; i++){
+29:	    Link theQuery = (Link)theQueries.elementAt(i);
+30:	    Vector bindings = queryLink(theQuery);
+31:	    if(bindings.size() != 0){
+32:		bindingsList.addElement(bindings);
+33:	    } else {
+34:		//失敗したとき
+35:		return (new Vector());
+36:	    }
+37:	}
+38:	return join(bindingsList);
+39:    }
+40:
+41:    public Vector queryLink(Link theQuery){
+42:	Vector bindings = new Vector();
+43:	for(int i = 0 ; i < links.size() ; i++){
+44:	    Link theLink = (Link)links.elementAt(i);
+45:	    Hashtable binding = new Hashtable();
+46:	    String theQueryString = theQuery.getFullName();
+47:	    String theLinkString  = theLink.getFullName();
+48:	    if((new Matcher()).
+49:	       matching(theQueryString,theLinkString,binding)){
+50:		bindings.addElement(binding);
+51:	    }
+52:	}
+53:	return bindings;
+54:    }
+55:
+56:    public Vector join(Vector theBindingsList){
+57:	int size = theBindingsList.size();
+58:	switch(size){
+59:	    case 0:
+60:		// 失敗している時？
+61:		break;
+62:	    case 1:
+63:		return (Vector)theBindingsList.elementAt(0);
+64:	    case 2:
+65:		Vector bindings1 = (Vector)theBindingsList.elementAt(0);
+66:		Vector bindings2 = (Vector)theBindingsList.elementAt(1);
+67:		return joinBindings(bindings1,bindings2);
+68:	    default:
+69:		bindings1 = (Vector)theBindingsList.elementAt(0);
+70:		theBindingsList.removeElement(bindings1);
+71:		bindings2 = join(theBindingsList);
+72:		return joinBindings(bindings1,bindings2);
+73:	}
+74:	// ダミー
+75:	return (Vector)null;
+76:    }
+77:
+78:    public Vector joinBindings(Vector theBindings1,Vector theBindings2){
+79:	Vector resultBindings = new Vector();
+80:	for(int i = 0 ; i < theBindings1.size() ; i++){
+81:	    Hashtable theBinding1 = (Hashtable)theBindings1.elementAt(i);
+82:	    for(int j = 0 ; j < theBindings2.size() ; j++){
+83:		Hashtable theBinding2 = (Hashtable)theBindings2.elementAt(j);
+84:		Hashtable resultBinding =
+85:		    joinBinding(theBinding1,theBinding2);
+86:		if(resultBinding.size()!=0){
+87:		    resultBindings.addElement(resultBinding);
+88:		}
+89:	    }
+90:	}
+91:	return resultBindings;
+92:    }
+93:
+94:    public Hashtable joinBinding(Hashtable theBinding1,Hashtable theBinding2){
+95:	Hashtable resultBinding = new Hashtable();
+96:	//System.out.println(theBinding1.toString() + "<->" + theBinding2.toString());
+97:	// theBinding1 の key & value をすべてコピー
+98:	for(Enumeration e = theBinding1.keys() ; e.hasMoreElements();){
+99:	    String key = (String)e.nextElement();
+100:	    String value = (String)theBinding1.get(key);
+101:	    resultBinding.put(key,value);
+102:	}
+103:	// theBinding2 の key & value を入れて行く，競合があったら失敗
+104:	for(Enumeration e = theBinding2.keys() ; e.hasMoreElements();){
+105:	    String key = (String)e.nextElement();
+106:	    String value2 = (String)theBinding2.get(key);
+107:	    if(resultBinding.containsKey(key)){
+108:		String value1 = (String)resultBinding.get(key);
+109:		//System.out.println("=>"+value1 + "<->" + value2);
+110:		if(!value2.equals(value1)){
+111:		    resultBinding.clear();
+112:		    break;
+113:		}
+114:	    }
+115:	    resultBinding.put(key,value2);
+116:	}
+117:	return resultBinding;
+118:    }
+119:
+120:    /***
+121:     * 例: Ito  =is-a=>  NIT-student:
+122:     *     tail : Ito,
+123:     *     head : NIT-student,
+124:     *     label: is-a.
+125:     */
+126:    public void addLink(Link theLink){
+127:	Node tail = theLink.getTail();
+128:	Node head = theLink.getHead();
+129:	links.addElement(theLink);
+130:
+131:	// 性質の継承
+132: 	if("is-a".equals(theLink.getLabel())){
+133: 	    // head のすべてのリンクを is-a をたどってすべてのノードに継承．
+134: 	    Vector tmp = new Vector();
+135: 	    tmp.addElement(tail);
+136: 	    recursiveInheritance(head.getDepartFromMeLinks(),tmp);
+137: 	}
+138:	// theLink を is-a をたどってすべてのノードに継承させる
+139:	Vector tmp = new Vector();
+140:	tmp.addElement(theLink);
+141:	recursiveInheritance(tmp,tail.getISATails());
+142:
+143:	
+144:	// 関係を head と tail に登録．
+145:	head.addArriveAtMeLinks(theLink);
+146:	tail.addDepartFromMeLinks(theLink);
+147:    }
+148:
+149:    /***
+150:     * theInheritLinks : 継承すべきリンク
+151:     * theInheritNodes : 継承すべきリンクを継承するノード
+152:     */
+153:    public void recursiveInheritance(Vector theInheritLinks,
+154:				     Vector theInheritNodes){
+155:	for(int i = 0 ; i < theInheritNodes.size() ; i++){
+156:	    Node theNode = (Node)theInheritNodes.elementAt(i);
+157:	    // theNode 自体にリンクを継承．
+158:	    for(int j = 0 ; j < theInheritLinks.size() ; j++){
+159:		// theNode を tail にしたリンクを生成
+160:		Link theLink = (Link)theInheritLinks.elementAt(j);
+161:		Link newLink = new Link(theLink.getLabel(),
+162:					theNode.getName(),
+163:					(theLink.getHead()).getName(),
+164:					 this);
+165:		newLink.setInheritance(true);
+166:		links.addElement(newLink);
+167:		theNode.addDepartFromMeLinks(newLink);
+168:	    }
+169:	    // theNode から is-a でたどれるノードにリンクを継承
+170:	    Vector isaTails = theNode.getISATails();
+171:	    if(isaTails.size() != 0){
+172:		recursiveInheritance(theInheritLinks,isaTails);
+173:	    }
+174:	}
+175:    }
+176:
+177:
+178:    public Vector getNodes(){
+179:	return nodes;
+180:    }
+181:    
+182:    public Hashtable getNodesNameTable(){
+183:	return nodesNameTable;
+184:    }
+185:
+186:    public void printLinks(){
+187:	System.out.println("*** Links ***");
+188:	for(int i = 0 ; i < links.size() ; i++){
+189:	    System.out.println(((Link)links.elementAt(i)).toString());
+190:	}
+191:    }
+192:
+193:    public void printNodes(){
+194:	System.out.println("*** Nodes ***");
+195:	for(int i = 0 ; i < nodes.size() ; i++){
+196:	    System.out.println(((Node)nodes.elementAt(i)).toString());
+197:	}
+198:    }
+199:}
+200:
+201:
+202:class Matcher {
+203:    StringTokenizer st1;
+204:    StringTokenizer st2;
+205:    Hashtable vars;
+206:    
+207:    Matcher(){
+208:	vars = new Hashtable();
+209:    }
+210:
+211:    public boolean matching(String string1,String string2,Hashtable bindings){
+212:	this.vars = bindings;
+213:	if(matching(string1,string2)){
+214:	    return true;
+215:	} else {
+216:	    return false;
+217:	}
+218:    }
+219:    
+220:    public boolean matching(String string1,String string2){
+221:	//System.out.println(string1);
+222:	//System.out.println(string2);
+223:	
+224:	// 同じなら成功
+225:	if(string1.equals(string2)) return true;
+226:	
+227:	// 各々トークンに分ける
+228:	st1 = new StringTokenizer(string1);
+229:	st2 = new StringTokenizer(string2);
+230:
+231:	// 数が異なったら失敗
+232:	if(st1.countTokens() != st2.countTokens()) return false;
+233:		
+234:	// 定数同士
+235:	for(int i = 0 ; i < st1.countTokens();){
+236:	    if(!tokenMatching(st1.nextToken(),st2.nextToken())){
+237:		// トークンが一つでもマッチングに失敗したら失敗
+238:		return false;
+239:	    }
+240:	}
+241:	
+242:	// 最後まで O.K. なら成功
+243:	return true;
+244:    }
+245:
+246:    boolean tokenMatching(String token1,String token2){
+247:	//System.out.println(token1+"<->"+token2);
+248:	if(token1.equals(token2)) return true;
+249:	if( var(token1) && !var(token2)) return varMatching(token1,token2);
+250:	if(!var(token1) &&  var(token2)) return varMatching(token2,token1);
+251:	return false;
+252:    }
+253:
+254:    boolean varMatching(String vartoken,String token){
+255:	if(vars.containsKey(vartoken)){
+256:	    if(token.equals(vars.get(vartoken))){
+257:		return true;
+258:	    } else {
+259:		return false;
+260:	    }
+261:	} else {
+262:	    vars.put(vartoken,token);
+263:	}
+264:	return true;
+265:    }
+266:
+267:    boolean var(String str1){
+268:	// 先頭が ? なら変数
+269:	return str1.startsWith("?");
+270:    }
+271:
+272:}

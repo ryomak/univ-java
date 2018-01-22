@@ -1,0 +1,90 @@
+ 1:import java.lang.*;
+ 2:import java.util.*;
+ 3:
+ 4:/**
+ 5: * マッチングのプログラム
+ 6: * 
+ 7: */
+ 8:class Matching {
+ 9: public static void main(String arg[]){
+10:  if(arg.length != 2){
+11:   System.out.println("Usgae : % Matching [string1] [string2]");
+12:  } else {
+13:   System.out.println((new Matcher()).matching(arg[0],arg[1]));
+14:  }
+15: }
+16:}
+17:
+18:/**
+19: * 実際にマッチングを行うクラス
+20: * 
+21: */
+22:class Matcher {
+23: StringTokenizer st1;
+24: StringTokenizer st2;
+25: Hashtable vars;
+26:   
+27: Matcher(){
+28:  vars = new Hashtable();
+29: }
+30:
+31: /**
+32:  * 実際にマッチングを行うメソッド
+33:  * @param     マッチングをするストリング２つ
+34:  * @return    成功なら true，失敗なら false
+35:  */
+36: public boolean matching(String string1,String string2){
+37:  System.out.println(string1);
+38:  System.out.println(string2);
+39:       
+40:  // 同じなら成功
+41:  if(string1.equals(string2)) return true;
+42:
+43:  // 各々トークンに分ける
+44:  st1 = new StringTokenizer(string1);
+45:  st2 = new StringTokenizer(string2);
+46:        
+47:  // 数が異なったら失敗
+48:  if(st1.countTokens() != st2.countTokens()) 
+49:  return false;
+50:        
+51:  // 定数同士
+52:  for(int i = 0 ; i < st1.countTokens();){
+53:   if(!tokenMatching(st1.nextToken(),st2.nextToken())){
+54:    // トークンが一つでもマッチングに失敗したら失敗
+55:    return false;
+56:   }
+57:  }
+58:        
+59:  // 最後まで O.K. なら成功
+60:  System.out.println(vars.toString());
+61:  return true;
+62: }
+63:
+64: boolean tokenMatching(String token1,String token2){
+65:  if(token1.equals(token2)) return true;
+66:  if( var(token1) && !var(token2)) 
+67:   return varMatching(token1,token2);
+68:  if(!var(token1) &&  var(token2)) 
+69:   return varMatching(token2,token1);
+70:  return false;
+71: }
+72:
+73: boolean varMatching(String vartoken,String token){
+74:  if(vars.containsKey(vartoken)){
+75:   if(token.equals(vars.get(vartoken))){
+76:    return true;
+77:   } else {
+78:    return false;
+79:   }
+80:  } else {
+81:   vars.put(vartoken,token);
+82:  }
+83:  return true;
+84: }
+85:
+86: boolean var(String str1){
+87:  // 先頭が ? なら変数
+88:  return str1.startsWith("?");
+89: }
+90:}

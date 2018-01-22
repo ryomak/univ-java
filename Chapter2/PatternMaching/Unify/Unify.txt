@@ -1,0 +1,116 @@
+  1:import java.lang.*;
+  2:import java.util.*;
+  3:
+  4:class Unify {
+  5: public static void main(String arg[]){
+  6:  if(arg.length != 2){
+  7:   System.out.println("Usgae : % Unify [string1] [string2]");
+  8:  } else {
+  9:   System.out.println((new Unifier()).unify(arg[0],arg[1]));
+ 10:  }
+ 11: }
+ 12:}
+ 13:
+ 14:class Unifier {
+ 15: StringTokenizer st1;
+ 16: String buffer1[];    
+ 17: StringTokenizer st2;
+ 18: String buffer2[];
+ 19: Hashtable vars;
+ 20:   
+ 21: Unifier(){
+ 22:  vars = new Hashtable();
+ 23: }
+ 24:
+ 25: public boolean unify(String string1,String string2,Hashtable bindings){
+ 26:  this.vars = bindings;
+ 27:  return unify(string1,string2);
+ 28: }
+ 29:
+ 30: public boolean unify(String string1,String string2){
+ 31:  System.out.println(string1);
+ 32:  System.out.println(string2);
+ 33:	
+ 34:  // 同じなら成功
+ 35:  if(string1.equals(string2)) return true;
+ 36:	
+ 37:  // 各々トークンに分ける
+ 38:  st1 = new StringTokenizer(string1);
+ 39:  st2 = new StringTokenizer(string2);
+ 40:
+ 41:  // 数が異なったら失敗
+ 42:  if(st1.countTokens() != st2.countTokens()) return false;
+ 43:
+ 44:  // 定数同士
+ 45:  int length = st1.countTokens();
+ 46:  buffer1 = new String[length];
+ 47:  buffer2 = new String[length];
+ 48:  for(int i = 0 ; i < length; i++){
+ 49:   buffer1[i] = st1.nextToken();
+ 50:   buffer2[i] = st2.nextToken();
+ 51:  }
+ 52:  for(int i = 0 ; i < length ; i++){
+ 53:   if(!tokenMatching(buffer1[i],buffer2[i])){
+ 54:    return false;
+ 55:   }
+ 56:  }
+ 57:	
+ 58:	
+ 59:  // 最後まで O.K. なら成功
+ 60:  System.out.println(vars.toString());
+ 61:  return true;
+ 62: }
+ 63:
+ 64: boolean tokenMatching(String token1,String token2){
+ 65:  if(token1.equals(token2)) return true;
+ 66:  if( var(token1) && !var(token2)) return varMatching(token1,token2);
+ 67:  if(!var(token1) &&  var(token2)) return varMatching(token2,token1);
+ 68:  if( var(token1) &&  var(token2)) return varMatching(token1,token2);
+ 69:  return false;
+ 70: }
+ 71:
+ 72: boolean varMatching(String vartoken,String token){
+ 73:  if(vars.containsKey(vartoken)){
+ 74:   if(token.equals(vars.get(vartoken))){
+ 75:    return true;
+ 76:   } else {
+ 77:    return false;
+ 78:   }
+ 79:  } else {
+ 80:   replaceBuffer(vartoken,token);
+ 81:   if(vars.contains(vartoken)){
+ 82:    replaceBindings(vartoken,token);
+ 83:   }
+ 84:   vars.put(vartoken,token);
+ 85:  }
+ 86:  return true;
+ 87: }
+ 88:
+ 89: void replaceBuffer(String preString,String postString){
+ 90:  for(int i = 0 ; i < buffer1.length ; i++){
+ 91:   if(preString.equals(buffer1[i])){
+ 92:    buffer1[i] = postString;
+ 93:   }
+ 94:   if(preString.equals(buffer2[i])){
+ 95:    buffer2[i] = postString;
+ 96:   }
+ 97:  }
+ 98: }
+ 99:    
+100: void replaceBindings(String preString,String postString){
+101:  Enumeration keys;
+102:  for(keys = vars.keys(); keys.hasMoreElements();){
+103:   String key = (String)keys.nextElement();
+104:   if(preString.equals(vars.get(key))){
+105:    vars.put(key,postString);
+106:   }
+107:  }
+108: }
+109:    
+110:    
+111: boolean var(String str1){
+112:  // 先頭が ? なら変数
+113:  return str1.startsWith("?");
+114: }
+116:}
+

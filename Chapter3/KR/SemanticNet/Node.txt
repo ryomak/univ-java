@@ -1,0 +1,51 @@
+ 1:import java.util.*;
+ 2:
+ 3:class Node {
+ 4: String name;
+ 5:
+ 6: // ©•ª‚©‚ço‚Ä‚¢‚­ƒŠƒ“ƒN
+ 7: Vector departFromMeLinks;
+ 8: // ©•ª‚É“ü‚Á‚Ä‚­‚éƒŠƒ“ƒN
+ 9: Vector arriveAtMeLinks;
+10:
+11: Node(String theName){
+12:  name = theName;
+13:  departFromMeLinks = new Vector();
+14:  arriveAtMeLinks   = new Vector();
+15: }
+16:
+17: public Vector getISATails(){
+18:  Vector isaTails = new Vector();
+19:  for(int i = 0 ; i < arriveAtMeLinks.size() ; i++){
+20:   Link theLink = (Link)arriveAtMeLinks.elementAt(i);
+21:   if("is-a".equals(theLink.getLabel())){
+22:    isaTails.addElement(theLink.getTail());
+23:   }
+24:  }
+25:  return isaTails;
+26: }
+27:
+28: public void addDepartFromMeLinks(Link theLink){
+29:  departFromMeLinks.addElement(theLink);
+30: }
+31:
+32: public Vector getDepartFromMeLinks(){
+33:  return departFromMeLinks;
+34: }
+35:
+36: public void addArriveAtMeLinks(Link theLink){
+37:  arriveAtMeLinks.addElement(theLink);
+38: }
+39:    
+40: public Vector getArriveAtMeLinks(){
+41:  return arriveAtMeLinks;
+42: }
+43:
+44: public String getName(){
+45:  return name;
+46: }
+47:
+48: public String toString(){
+49:  return name;
+50: }
+51:}
